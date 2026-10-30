@@ -75,19 +75,19 @@ const G = (() => {
     { k: 'magazine', kind: 'media', tier: 1, ck: 'media', client: '月刊アイドルスコープ 編集部', person: '編集 吉岡', subj: '取材・撮影のご相談', when: [[1, 1], [3, 1]], pay: 30000, min: 1, max: 1, nom: 'looks', w: { looks: 1 }, fans: 160 },
     { k: 'school', kind: 'event', tier: 1, ck: 'event', client: '〇〇大学 学園祭実行委員会', person: '企画局 中村', subj: '学園祭ステージ 出演依頼', when: [[5, 0], [6, 0]], pay: 50000, min: 3, max: 9, w: { dance: 1, vocal: .6, talk: .6 }, fans: 200, cheki: 1 },
     { k: 'pr', kind: 'pr', tier: 1, ck: 'corp', client: '株式会社ルクシア', person: 'マーケティング部 西', subj: 'SNS PR投稿のご相談', when: [[1, 1], [2, 0], [4, 0]], pay: 60000, min: 1, max: 1, nom: 'followers', w: { looks: 1, talk: .3 }, fans: 100 },
-    { k: 'oneman', kind: 'oneman', tier: 1, ck: 'live', client: '渋谷 CLUB ORBIT', person: 'ブッキング 長尾', subj: 'ワンマンライブ開催のご提案', when: [[5, 1], [6, 1]], pay: 'oneman', venue: 250000, cap: 300, min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .5 }, fans: 300, cheki: 1, tired: 1.3 },
+    { k: 'oneman', kind: 'oneman', tier: 1, ck: 'live', client: '渋谷 CLUB ORBIT', person: 'ブッキング 長尾', subj: 'ワンマンライブ開催のご提案', when: [[5, 1], [6, 1]], pay: 'oneman', venue: 250000, cap: 300, price: 3500, min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .5 }, fans: 300, cheki: 1, tired: 1.3 },
     { k: 'dinner', kind: 'dinner', tier: 1, ck: 'corp', client: '株式会社ハーベストキャピタル', person: '代表付き秘書 平田', subj: '会食のご案内(スポンサーのご相談)', when: [[4, 1]], pay: 200000, min: 2, max: 2, adult: 1, night: 1, w: { talk: 1, looks: 1 }, fans: 0, once: 1 },
     { k: 'tvnight', kind: 'media', tier: 2, ck: 'media', client: '東都テレビ「夜ふかしアイドル部」', person: 'ディレクター 菊池', subj: '深夜番組 ひな壇出演のお願い', when: [[4, 1]], pay: 60000, min: 2, max: 3, night: 1, w: { talk: 1, looks: .5 }, fans: 600 },
     { k: 'gravure', kind: 'gravure', tier: 2, ck: 'media', client: '週刊ミッドナイト 編集部', person: 'グラビア班 樋口', subj: 'グラビア撮影のご相談', when: [[2, 1]], pay: 100000, min: 1, max: 1, nom: 'looks', adult: 1, w: { looks: 1 }, fans: 500 },
     { k: 'fes', kind: 'live', tier: 2, ck: 'event', client: 'TOKYO IDOL CARNIVAL 実行委員会', person: '出演調整 森下', subj: 'アイドルフェス 出演のご案内', when: [[6, 1]], pay: 0, min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .3 }, fans: 800, cheki: 1 },
     { k: 'tour', kind: 'tour', tier: 2, ck: 'event', client: 'ノースイベンツ', person: '営業 田辺', subj: '地方イベント出演のご依頼', when: [[5, 0], [6, 0]], pay: 150000, min: 3, max: 12, w: { vocal: .8, dance: .8, talk: .8 }, fans: 700, cheki: 1, tired: 1.7 },
     { k: 'drama', kind: 'drama', tier: 2, ck: 'media', client: '制作会社 ブルーリール', person: 'キャスティング 小野', subj: 'ドラマ出演のご相談', when: [[1, 0], [3, 0]], pay: 80000, min: 1, max: 1, nom: 'talk', w: { talk: 1, looks: .8 }, fans: 600 },
-    { k: 'oneman2', kind: 'oneman', tier: 2, ck: 'live', client: '恵比寿 LIQUID HALL', person: '制作 片岡', subj: '中規模ワンマンのご提案', when: [[6, 1]], pay: 'oneman', venue: 900000, cap: 900, min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .5 }, fans: 1200, cheki: 1, tired: 1.4 },
+    { k: 'oneman2', kind: 'oneman', tier: 2, ck: 'live', client: '恵比寿 LIQUID HALL', person: '制作 片岡', subj: '中規模ワンマンのご提案', when: [[6, 1]], pay: 'oneman', venue: 900000, cap: 900, price: 4500, min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .5 }, fans: 1200, cheki: 1, tired: 1.4 },
     { k: 'cm', kind: 'cm', tier: 3, ck: 'corp', client: '大和製菓 宣伝部', person: '宣伝部 秋元', subj: 'テレビCM出演のご相談', when: [[1, 0], [2, 0], [3, 0]], pay: 1000000, min: 1, max: 3, nom: 'looks', w: { looks: 1, talk: .4 }, fans: 3000 },
     { k: 'musictv', kind: 'media', tier: 3, ck: 'media', client: '日本中央テレビ 音楽班', person: 'プロデューサー 守屋', subj: '音楽番組 出演のお願い', when: [[4, 1]], pay: 200000, min: 3, max: 12, w: { vocal: 1, dance: 1, looks: .5 }, fans: 5000 },
     { k: 'bigfes', kind: 'live', tier: 3, ck: 'event', client: 'SUMMER IDOL SONIC 実行委員会', person: 'ブッキング 杉浦', subj: '大型フェス メインステージのご相談', when: [[6, 1]], pay: 300000, min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .4 }, fans: 6000, cheki: 1 },
     { k: 'kanmuri', kind: 'media', tier: 4, ck: 'media', client: 'BS東都 編成部', person: '編成 三上', subj: '冠番組のご提案', when: [[1, 1], [3, 1]], pay: 500000, min: 3, max: 12, w: { talk: 1, looks: .5 }, fans: 10000 },
-    { k: 'arena', kind: 'oneman', tier: 4, ck: 'live', client: '横浜アリーナ(仮押さえ)', person: '制作 本郷', subj: 'アリーナ単独公演のご提案', when: [[6, 1]], pay: 'oneman', venue: 15000000, cap: 12000, min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .6 }, fans: 15000, cheki: 0, tired: 1.6 },
+    { k: 'arena', kind: 'oneman', tier: 4, ck: 'live', client: '横浜アリーナ(仮押さえ)', person: '制作 本郷', subj: 'アリーナ単独公演のご提案', when: [[6, 1]], pay: 'oneman', venue: 8000000, cap: 12000, price: 8800, min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .6 }, fans: 15000, cheki: 0, tired: 1.6 },
   ];
   const BIG = ['oneman', 'oneman2', 'arena', 'cm', 'musictv', 'bigfes', 'kanmuri', 'tour'];
   const DESCKEY = { oneman2: 'oneman', arena: 'arena' };
@@ -116,7 +116,7 @@ const G = (() => {
   function payText(job) {
     if (job.pay === 'ticket') return 'チケットバック(1枚 ¥1,000 × 動員)';
     if (job.pay === 'gift') return 'ギフト額に応じて(目安 数千円〜)';
-    if (job.pay === 'oneman') return `会場費 ${yen(job.venue)}(前払い)/ チケット ¥3,500 × 動員(キャパ ${job.cap.toLocaleString()})`;
+    if (job.pay === 'oneman') return `会場費 ${yen(job.venue)}(前払い)/ チケット ${yen(job.price)} × 動員(キャパ ${job.cap.toLocaleString()})`;
     if (!job.pay) return 'なし(交通費のみ)';
     return yen(job.pay) + '(税別・交通費込み)';
   }
@@ -151,7 +151,7 @@ ${desc}
     S.g.jobCool = S.g.jobCool || {};
     const okJob = j => j.tier <= tier() && !used.has(j.k) && !(j.once && S.g.flags['once_' + j.k]) && j.tier >= tier() - 2 && (S.g.jobCool[j.k] || 0) <= S.g.turn;
     S.g.sales.forEach(ck => {
-      const c = JOBS.filter(j => j.ck === ck && okJob(Object.assign({}, j, { tier: Math.max(0, j.tier - 1) })));
+      const c = JOBS.filter(j => j.ck === ck && !BIG.includes(j.k) && okJob(Object.assign({}, j, { tier: Math.max(0, j.tier - 1) })));
       if (c.length) { const j = pick(c); used.add(j.k); out.push(makeJobMail(j, Math.floor(rnd() * weeks))); }
     });
     S.g.sales = [];
@@ -294,7 +294,7 @@ ${desc}
         }
         body.innerHTML = `<div class="cal-h"><b>${turnName()}</b><span>${range()}${S.g.len > 7 ? '(2週間)' : ''}</span><span class="cal-left">予算 <b class="${S.g.money < 0 ? 'neg' : 'pos'}">${yen(S.g.money)}</b>${S.g.debt ? ` ・ 借金 <b class="neg">${yen(S.g.debt)}</b>` : ''}</span></div>
           <div class="cal-scroll">${grid}</div>
-          <div class="cal-go">${S.g.done ? '<span>このランは終わりました</span>' : `<button class="btn" data-future>グループの今後…</button><span class="sp"></span><span>依頼の返事がまだ ${openJobs().length} 件</span><button class="btn primary" data-go>この予定で${S.g.len > 7 ? '2週間' : '1週間'}を進める</button>`}</div>`;
+          <div class="cal-go">${S.g.done ? '<span>このランは終わりました</span>' : `<button class="btn" data-future>グループの今後…</button><span class="sp"></span><span>依頼の返事がまだ ${openJobs().length} 件</span><button class="btn primary" data-go>${Icons.get('mail')}予定を部長に報告する(次へ進む)</button>`}</div>`;
         body.querySelectorAll('[data-i]').forEach(b => b.onclick = () => openPlan(+b.dataset.i));
         body.querySelectorAll('[data-x]').forEach(b => b.onclick = () => { S.g.slots[+b.dataset.x] = null; save(); OS.refresh('calendar'); sticky(); });
         const go = body.querySelector('[data-go]'); if (go) go.onclick = confirmAdvance;
@@ -309,13 +309,40 @@ ${desc}
   }
   const openJobs = () => S.mails.filter(m => m.job && m.jobState === 'open');
   const openChoices = () => S.mails.filter(m => m.choices && m.chosen == null);
+  // 予定を部長にメールで報告すると、次のターンへ進む
   function confirmAdvance() {
+    if (S.g.done) return;
     const free = S.g.slots.filter(s => !s).length;
     const warn = [];
-    if (openJobs().length) warn.push(`返事をしていない依頼が ${openJobs().length} 件あります(断ったことになります)`);
-    if (openChoices().length) warn.push(`対応していない件が ${openChoices().length} 件あります(何もしなかったことになります)`);
-    if (free) warn.push(`空いている時間が ${free} コマあります`);
-    OS.dialog('予定を進める', `${turnName()}(${range()})をこの予定で進めます。${warn.length ? '\n\n・' + warn.join('\n・') : ''}`, [{ label: '進める', primary: true, fn: advance }, { label: 'キャンセル' }], warn.length ? 'warn' : 'info');
+    if (openJobs().length) warn.push(`返事をしていない依頼が ${openJobs().length} 件あります(送ると、断ったことになります)`);
+    if (openChoices().length) warn.push(`対応していないメールが ${openChoices().length} 件あります(送ると、何もしなかったことになります)`);
+    if (free) warn.push(`カレンダーの空き時間が ${free} コマあります`);
+    const lines = S.g.slots.map((s, i) => s && s.kind !== 'fixed' ? `・${slotLabel(i)} ${s.kind === 'date' || s.kind === 'breakup' ? '私用' : s.label}` : null).filter(Boolean);
+    const body = `桐谷部長
+
+お疲れさまです。${S.g.name}の担当です。
+${turnName()}(${range()})の予定をご報告します。
+
+${lines.length ? lines.join('\n') : '・(特に予定なし)'}
+
+以上、よろしくお願いいたします。`;
+    OS.open('report', {
+      title: '予定の報告 - メール', icon: 'mail', w: 580, h: 540,
+      render(b) {
+        b.innerHTML = `<div class="cp">
+          <label><span>宛先</span><input value="桐谷 誠(部長) <kiritani@mitsuba-pro.co.jp>" readonly></label>
+          <label><span>件名</span><input class="subj" value="【予定報告】${turnName()}(${range()})"></label>
+          ${warn.length ? `<div class="rp-warn">${warn.map(w => '・' + escapeHtml(w)).join('<br>')}</div>` : ''}
+          <textarea class="cp-body"></textarea>
+          <div class="cp-foot"><span class="cp-note">送信すると、この予定で${S.g.len > 7 ? '2週間' : '1週間'}が進みます</span><button class="btn primary">${Icons.get('mail')}送信</button></div></div>`;
+        b.querySelector('textarea').value = body;
+        b.querySelector('.primary').onclick = () => {
+          S.mails.unshift({ id: 'rep_' + S.g.turn, box: 'sent', to: '桐谷 誠(部長)', from: '自分', subject: b.querySelector('.subj').value, body: b.querySelector('textarea').value, date: dayLabel(S.g.day) + ' 09:30' });
+          OS.close('report');
+          advance();
+        };
+      },
+    });
   }
 
   // ---------- メンバーの状態を動かす道具 ----------
@@ -333,7 +360,7 @@ ${desc}
   const best = (ids, wts) => ids.slice().sort((a, b) => score(b, wts) - score(a, wts))[0];
   const worst = (ids, wts) => ids.slice().sort((a, b) => score(a, wts) - score(b, wts))[0];
   function gainFans(total, ids, nom) {
-    if (total > 0) total *= 25000 / (25000 + S.g.fans);
+    if (total > 0) total *= .5 * 8000 / (8000 + S.g.fans);
     total = Math.round(total);
     S.g.fans = Math.max(0, S.g.fans + total);
     S.g.peak = Math.max(S.g.peak || 0, S.g.fans);
@@ -354,7 +381,11 @@ ${desc}
   }
   function zfrom(kind, o) { zpost(fill(fresh('z_' + kind, TX.z[kind]), o), (o.likes || 100) * (.6 + rnd() * .8)); }
   function ownPost(text, likes) { S.g.own.unshift([md(S.g.day + Math.floor(rnd() * S.g.len)) + ' 20:00', text, '♡ ' + Math.max(1, Math.round(likes)).toLocaleString()]); S.g.own = S.g.own.slice(0, 30); }
-  function log(text) { S.g.log.push([S.g.day, `${ymd(S.g.day)}、${text}`]); }
+  function log(text) {
+    const y = date(S.g.day).getFullYear();
+    if (S.g.log.some(([d, t]) => date(d).getFullYear() === y && t.endsWith('、' + text))) return;
+    S.g.log.push([S.g.day, `${ymd(S.g.day)}、${text}`]);
+  }
   function rest(id, n) { const m = M(id); if (!m || m.status === 'left') return; m.status = 'rest'; m.rest = Math.max(m.rest, n); }
   function mf(id, k) { const m = M(id); if (m) m.mf *= k; }
   function flagM(id, k, v) { const m = M(id); if (m) m.flags[k] = v; }
@@ -411,9 +442,9 @@ ${desc}
     if (job.pay === 'ticket') { const att = Math.max(3, Math.round(S.g.fans * .012 * (.5 + q / 10) + rnd() * 8)); pay = att * 1000; txt += `\n動員 ${att}人。`; }
     else if (job.pay === 'gift') pay = Math.round(cast.reduce((a, id) => a + M(id).mf * (8 + rnd() * 20), 0) / 100) * 100;
     else if (job.pay === 'oneman') {
-      const att = Math.min(job.cap, Math.round(S.g.fans * (.02 + rnd() * .02) * (.6 + q / 12)));
+      const att = Math.min(job.cap, Math.round(S.g.fans * (.03 + rnd() * .03) * (.6 + q / 12)));
       ledger(`会場費(${job.client})`, 0, job.venue);
-      pay = att * 3500;
+      pay = att * job.price;
       const fill_ = att / job.cap;
       txt = fill_ >= .95 ? `チケットは完売した。${att.toLocaleString()}人。開演前の客席を袖から見て、${b}が泣いていた。` : fill_ >= .6 ? `${att.toLocaleString()}人(キャパの${Math.round(fill_ * 100)}%)。後ろの方は少し空いていた。それでも、最後の曲で全員が手を挙げた。` : `${att.toLocaleString()}人(キャパの${Math.round(fill_ * 100)}%)。客席の後ろ半分は、照明を落としてごまかした。終演後、${wv}が「すみません」と謝ってきた。謝ることではない。`;
       if (fill_ >= .95) log(`${job.client.replace(/\(.+\)/, '')}でのワンマンライブを完売させた。`);
@@ -499,14 +530,14 @@ ${desc}
   function runSNS(v, R, i) {
     const ids = ready();
     const talk = ids.reduce((a, id) => a + M(id).sk.talk, 0) / Math.max(1, ids.length);
-    const boost = (S.g.m.nanase && M('nanase').status === 'active' ? 1.4 : 1) * (1 + Math.log10(1 + S.g.fans / 1000) * .5);
+    const boost = S.g.m.nanase && M('nanase').status === 'active' ? 1.4 : 1;
     let gain, txt;
     if (v === 'safe') { gain = (25 + talk * 6) * boost * (.7 + rnd() * .6); txt = fresh('sns_safe', ['レッスン後のオフショットを載せた。いつもの人たちがいいねしてくれた。', 'メンバーの私服の写真を載せた。「かわいい」の引用が少しついた。', '寮のごはんの写真を載せた。なぜか一番伸びた。', 'ライブの告知を載せた。リポストは身内ばかりだった。', '移動中の寝顔を載せた。本人に怒られた。']); ownPost(fresh('own_safe', ['今日もレッスンがんばりました📸', '移動中のひとこま🚃', '今日のごはん🍙', '次のライブもよろしくお願いします!', 'オフショット📷']) + ' #' + S.g.name, gain * 2); }
     else if (v === 'plan') { gain = (60 + talk * 14) * boost * (.5 + rnd()); txt = `「${fresh('sns_plan', ['メンバーの好きなところ言い合ってみた', '寮の冷蔵庫の中身紹介', '最年少に敬語禁止チャレンジ', '利きポテトチップス対決', 'メンバーの私服を勝手に査定', '目隠しで振付やってみた', '寝起きドッキリ(許可済み)', 'メンバーの第一印象を発表', 'ガチの一人カラオケ採点', '100均で衣装を作ってみた'])}」の動画を出した。`; ownPost('【企画】動画あげました!最後まで見てね #' + S.g.name, gain * 2.5); }
     else {
       const r = rnd();
       ownPost(fresh('own_bold', ['【ガチ】メンバー同士で「グループに要らない人」投票してみた', '【ドッキリ】リーダーが脱退すると言ったらメンバーはどうする?', '【検証】すっぴんで街を歩いて何人に気づかれるか', '【本音】メンバーの嫌いなところを言い合ってみた', '【閲覧注意】激辛を完食できなかったら罰ゲーム']) + ' #' + S.g.name, 200 + rnd() * 2000);
-      if (r < .4) { gain = (400 + talk * 60) * boost * (.6 + rnd()); txt = '攻めた企画がバズった。知らない人からの引用が止まらない。'; zpost(`{g}の企画動画、地獄すぎて最後まで見てしまった`, gain * 1.5); }
+      if (r < .4) { gain = (250 + talk * 35) * boost * (.6 + rnd()); txt = '攻めた企画がバズった。知らない人からの引用が止まらない。'; zpost(`{g}の企画動画、地獄すぎて最後まで見てしまった`, gain * 1.5); }
       else if (r < .75) { gain = -S.g.fans * .06; S.g.heat += 15; txt = '攻めた企画が荒れた。「メンバーがかわいそう」「運営が終わってる」'; zpost(`{g}の運営、メンバーで遊ぶのやめなよ`, 800 + rnd() * 1500); ids.forEach(id => moodAdd(id, -8)); log('SNSの企画動画が「メンバーがかわいそう」と批判を浴びた。'); }
       else { gain = 30; txt = '攻めた企画を出したが、ほとんど誰にも見られなかった。'; }
     }
@@ -593,8 +624,8 @@ ${desc}
       const need = Math.ceil(-S.g.money / 500000) * 500000;
       S.g.debt += need; ledger('社内貸付(借入)', need, 0);
       post.push({ id: 'debt_' + S.g.turn, from: '経理 大西', addr: 'onishi@mitsuba-pro.co.jp', subject: fresh('debtsubj', ['【経理】新グループ予算の不足について', '【経理】追加の貸付について', '【経理】資金繰りのご報告']), body: `お疲れさまです。経理の大西です。\n\n新グループの予算がマイナスになったため、社内貸付として ${yen(need)} を計上しました。\n借入の合計は ${yen(S.g.debt)} です。\n\n${S.g.debt >= DEBT_MAX * .5 ? '会社として、これ以上はかなり厳しいです。\n上限(¥10,000,000)を超えた場合、会社そのものが持ちません。' : '利息は週2%です。「年」ではなく「週」です。'}\n\n経理 大西` });
-    } else if (S.g.debt && S.g.money > 1000000) {
-      const pay = Math.min(S.g.debt, Math.floor((S.g.money - 500000) / 100000) * 100000);
+    } else if (S.g.debt && S.g.money > 500000) {
+      const pay = Math.min(S.g.debt, Math.floor((S.g.money - 500000) / 10000) * 10000);
       if (pay > 0) { S.g.debt -= pay; ledger('借入金 返済', 0, pay); }
     }
     // 疲れ・気分
@@ -626,7 +657,7 @@ ${desc}
     active().forEach(id => M(id).mf *= Math.pow(.99, weeks));
     if (!worked && S.g.turn > 2) zfrom('quiet', { likes: 40 + S.g.fans * .01 });
     // 本社への上納
-    if (S.g.money > 3000000) { const up = Math.round((S.g.money - 3000000) * .5); ledger('本社への上納(利益の50%)', 0, up); }
+    if (S.g.money > 3000000 && !S.g.debt) { const up = Math.round((S.g.money - 3000000) * .5); ledger('本社への上納(利益の50%)', 0, up); }
     // 炎上の熱
     S.g.heat = Math.max(0, S.g.heat - 8 * weeks);
     // 交際のバレ度
@@ -640,6 +671,7 @@ ${desc}
     S.g.files = S.g.files.slice(0, 80);
     // 次のターンへ
     const prevDay = S.g.day;
+    (S.g.fanTrace = S.g.fanTrace || []).push(Math.round(S.g.fans)); S.g.fanTrace = S.g.fanTrace.slice(-120);
     S.g.day += S.g.len; S.g.turn++;
     S.g.len = S.g.turn < 4 ? 7 : 14;
     birthdays(prevDay, S.g.day);
@@ -706,7 +738,8 @@ ${desc}
     gradCheck();
     loveCheck();
     releaseCheck();
-    if (S.g.departedNow) audOffer();
+    const audPending = S.mails.some(m => (m.ev === 'audOffer' && m.chosen == null) || (m.aud && !m.audDone));
+    if (S.g.departedNow || (active().length < 3 && !audPending && !(S.g.aud && !S.g.aud.done))) audOffer();
     S.g.departedNow = 0;
     if (S.g.heat >= 70 && !S.g.flags.heatWarn) { S.g.flags.heatWarn = 1; sendEvent('info', { id: 'heatwarn_' + S.g.turn, from: '桐谷 誠(部長)', subject: '最近の件について', body: '最近、グループの名前が悪い意味で出すぎています。\n社長からも聞かれました。\n\nこれ以上何かあったら、活動休止も考えます。\n\n桐谷' }); }
     if (S.g.heat < 40) S.g.flags.heatWarn = 0;
@@ -780,7 +813,7 @@ ${desc}
 
   // ---------- 追加オーディション ----------
   function audOffer() {
-    if (S.g.lastLive || S.g.aud && !S.g.aud.done) return;
+    if (S.g.lastLive || (S.g.aud && !S.g.aud.done)) return;
     const n = active().length;
     if (n === 0) return;
     sendEvent('audOffer', { id: 'audoffer_' + S.g.turn, from: '桐谷 誠(部長)', subject: n < 3 ? 'グループの今後について(至急)' : '追加メンバーについて', body: n < 3 ? `メンバーが${n}人になりました。\nこのままでは、グループとして活動を続けるのは難しいです。\n\n追加オーディションをして続けるか、ここで終わりにするか、決めてください。\n\n桐谷` : `メンバーが抜けたので、追加オーディションをやるかどうか決めてください。\n費用は30万円ほどかかります。\n\n今の人数のままでもかまいません。\nファンの中には、新メンバーを嫌がる人もいます。\n\n桐谷`, choices: n < 3 ? ['追加オーディションをする(¥300,000)', 'ここでグループを終わりにする'] : ['追加オーディションをする(¥300,000)', '今の人数で続ける'] });
@@ -868,7 +901,7 @@ ${desc}
   function releaseCheck() {
     if (S.g.release || S.g.turn < 4 || S.g.lastLive) return;
     if (S.g.turn - (S.g.lastRelease || 0) < 6) return;
-    const cost = [800000, 1500000, 3000000, 6000000, 12000000][tier()];
+    const cost = [500000, 1000000, 2000000, 4000000, 8000000][tier()];
     const title = fresh('song', TX.songs);
     sendEvent('release', { id: 'rel_' + S.g.turn, from: '桐谷 誠(部長)', subject: `${S.g.releases.length ? '次の' : '最初の'}シングルについて`, body: `${S.g.releases.length ? '次のシングル' : 'デビューシングル'}の話です。\n\n仮タイトルは「${title}」。\n制作費とプロモーション込みで ${yen(cost)} かかります。\n売れなければ赤字です。\n\n出すかどうか、決めてください。\n\n桐谷`, choices: ['出す', '今回は見送る'], title, cost });
   }
@@ -1112,7 +1145,8 @@ ${desc}
     const n = document.getElementById('sticky');
     if (!n || !S.g) return;
     const free = S.g.slots.filter(s => !s).length;
-    n.innerHTML = S.g.done ? `<b>おつかれさま</b><br>${escapeHtml(S.g.name)}<br>${escapeHtml((ENDS[S.g.ending] || [''])[0])}` : `<b>${turnName()}</b><br>${range()}<br>予算 ${yen(S.g.money)}${S.g.debt ? `<br><span class="neg">借金 ${yen(S.g.debt)}</span>` : ''}<br>Zフォロワー ${Math.round(S.g.fans).toLocaleString()}<br><br>空き ${free}コマ`;
+    n.innerHTML = S.g.done ? `<b>おつかれさま</b><br>${escapeHtml(S.g.name)}<br>${escapeHtml((ENDS[S.g.ending] || [''])[0])}` : `<b>${turnName()}</b><br>${range()}<br>予算 ${yen(S.g.money)}${S.g.debt ? `<br><span class="neg">借金 ${yen(S.g.debt)}</span>` : ''}<br>Zフォロワー ${Math.round(S.g.fans).toLocaleString()}<br><br>空き ${free}コマ<br><a href="#" class="st-go">予定が決まったら<br>→ 部長にメールで報告!</a>`;
+    const a = n.querySelector('.st-go'); if (a) a.onclick = e => { e.preventDefault(); confirmAdvance(); };
   }
   function refreshAll() {
     ['calendar', 'mail', 'sheet', 'explorer', 'chat'].forEach(w => OS.refresh(w));
@@ -1174,12 +1208,13 @@ ${desc}
       turnStart();
       save();
       refreshAll();
-      OS.dialog('結成', `11月2日(月)。\n「${S.g.name}」の活動が始まります。\n\n・メールに仕事の依頼が届きます。受けるならメンバーを選びます\n・カレンダーの空き時間に、レッスン・面談・SNS運営・営業を入れます\n・予定が決まったら「この予定で〜を進める」を押します\n・最初の1か月は1週間ずつ、そのあとは2週間ずつ進みます\n\nランは、グループが終わるまで続きます。\n(解散・倒産・全員の卒業・あなたの解任)`, [{ label: 'メールを見る', primary: true, fn: openMail }], 'info');
+      OS.dialog('結成', `11月2日(月)。\n「${S.g.name}」の活動が始まります。\n\n・メールに仕事の依頼が届きます。受けるならメンバーを選びます\n・カレンダーの空き時間に、レッスン・面談・SNS運営・営業を入れます\n・予定が決まったら、メールで部長に予定を報告します。送ると次へ進みます
+  (メールの「予定を部長に報告する」、カレンダーの下、付箋のどこからでも)\n・最初の1か月は1週間ずつ、そのあとは2週間ずつ進みます\n\nランは、グループが終わるまで続きます。\n(解散・倒産・全員の卒業・あなたの解任)`, [{ label: 'メールを見る', primary: true, fn: openMail }], 'info');
     });
   }
 
   return {
-    start, openCalendar, mailActions, sheetTabs, sheetRows, explorerFiles, searchHits, wikiHtml, sticky, chatChoose,
+    start, openCalendar, mailActions, report: confirmAdvance, sheetTabs, sheetRows, explorerFiles, searchHits, wikiHtml, sticky, chatChoose,
     clockDate: () => { const t = date(S.g.day); return `${t.getFullYear()}/${String(t.getMonth() + 1).padStart(2, '0')}/${String(t.getDate()).padStart(2, '0')}`; },
     audIds: () => S.g && S.g.aud ? S.g.aud.ids : [],
   };

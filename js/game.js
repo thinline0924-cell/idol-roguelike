@@ -343,7 +343,7 @@ function openMail() {
       const cur = S.mails.find(m => m.id === w.sel && m.box === w.box);
       const cnt = b => S.mails.filter(m => m.box === b && m.unread).length;
       body.innerHTML = `
-        <div class="ml-bar"><button class="btn primary" data-new ${S.submitted ? 'hidden' : ''}>${Icons.get('pen')}問い合わせを書く</button><span class="ml-acct">p-new@mitsuba-pro.co.jp</span></div>
+        <div class="ml-bar"><button class="btn primary" data-new ${S.submitted ? 'hidden' : ''}>${Icons.get('pen')}問い合わせを書く</button>${S.phase === 'group' && S.g && S.g.name && !S.g.done ? `<button class="btn primary" data-rep>${Icons.get('pen')}予定を部長に報告する(次へ進む)</button>` : ''}<span class="ml-acct">p-new@mitsuba-pro.co.jp</span></div>
         <div class="ml-main ${cur && OS.isNarrow() ? 'reading' : ''}">
           <nav class="ml-nav">
             <button data-b="inbox" class="${w.box === 'inbox' ? 'on' : ''}">受信トレイ<em>${cnt('inbox') || ''}</em></button>
@@ -375,6 +375,7 @@ function openMail() {
       } else rd.innerHTML = '<div class="empty">読むメッセージを選んでください</div>';
       body.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { w.box = b.dataset.b; w.sel = null; OS.refresh('mail'); });
       body.querySelector('[data-new]').onclick = openCompose;
+      const rp = body.querySelector('[data-rep]'); if (rp) rp.onclick = () => G.report();
     },
   });
 }
