@@ -1,5 +1,5 @@
 // ゲームの状態と各アプリの中身
-const SAVE_KEY = 'idol-proto-v1';
+const SAVE_KEY = 'idol-proto-v2';
 const APPS = {
   explorer: { name: 'エクスプローラー', icon: 'folder' },
   mail: { name: 'メール', icon: 'mail' },
@@ -9,25 +9,40 @@ const APPS = {
   sheet: { name: '表計算', icon: 'sheet' },
   notepad: { name: 'メモ帳', icon: 'txt' },
 };
-const C = id => CANDIDATES.find(c => c.id === id);
+const C = id => CANDIDATES.find(c => c.id === id) || (S && S.pool || []).find(c => c.id === id);
+// このランの最終候補8人
+const RUN = () => S.run.map(C);
 const clone = o => JSON.parse(JSON.stringify(o));
 
 // ---------- 状態 ----------
 function freshState() {
   const slots = [];
   WEEK.fixed.forEach(d => d.forEach(v => slots.push(v ? { label: v, kind: 'fixed' } : null)));
+  // 手書きの8人から5人、自動生成から3人。番号はばらばらにして並べる
+  const hw = CANDIDATES.slice().sort(() => Math.random() - .5).slice(0, 5);
+  const usedNo = new Set(hw.map(c => +c.no));
+  const pool = [];
+  while (pool.length < 3) { const n = 2 + Math.floor(Math.random() * 33); if (usedNo.has(n)) continue; usedNo.add(n); pool.push(GEN.gen(n)); }
+  const run = hw.concat(pool).sort((a, b) => +a.no - +b.no);
   const sheet = {};
-  CANDIDATES.forEach(c => sheet[c.id] = { j: '', note: '' });
+  run.forEach(c => sheet[c.id] = { j: '', note: '' });
+  const chats = clone(START_CHATS);
+  const hint = run.filter(c => c.search.some(r => r.type === 'bbs') || (c.gen && c.secret !== 'none'));
+  const h1 = hint[0], h2 = hint[1];
+  chats.sano.log = [['佐野', '10/25 22:10', 'オーディションの資料見た?']]
+    .concat(h1 ? [['佐野', '10/25 22:11', `${h1.name.replace(' ', '')}って子、ネットで色々言われてるみたい。一応調べといた方がいいよ`]] : [])
+    .concat(h2 ? [['佐野', '10/25 22:13', `あと${h2.name.replace(' ', '')}も。知り合いが「あの子は気をつけた方がいい」って言ってた。何をかは知らないけど`]] : [])
+    .concat([['自分', '10/25 23:40', 'ありがとう。見てみる'], ['佐野', '10/25 23:41', 'Lumièreの方は大丈夫。たぶん']]);
   return {
-    booted: false, slots, sheet, submitted: false,
+    booted: false, slots, sheet, submitted: false, run: run.map(c => c.id), pool,
     mails: START_MAILS.map(m => Object.assign({ box: 'inbox' }, m)),
-    chats: clone(START_CHATS), chatUnread: {},
+    chats, chatUnread: {},
     searched: {}, asked: {}, interviewed: {}, history: [],
   };
 }
 let S;
 try { S = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { S = null; }
-if (!S || !S.slots) S = freshState();
+if (!S || !S.slots || !S.run) S = freshState();
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* 保存できなくても遊べる */ } }
 
 // ---------- 時間(1週間の空き枠) ----------
@@ -70,11 +85,13 @@ const DESKTOP = [
   { key: 'keihi', name: '経費精算_10月.xlsx', icon: 'sheet' },
   { key: 'answer', name: '答え合わせ(開発用).txt', icon: 'txt', after: 1 },
   { key: 'group', name: '新グループ', icon: 'folder', grp: 1 },
+  { key: 'archive', name: '過去の担当グループ', icon: 'folder', arc: 1 },
 ];
+function archive() { try { return JSON.parse(localStorage.getItem('idol-archive') || '[]'); } catch (e) { return []; } }
 function renderDesktop() {
   const box = document.getElementById('icons');
   box.innerHTML = '';
-  DESKTOP.filter(d => (!d.after || S.submitted) && (!d.grp || S.phase === 'group')).forEach(d => {
+  DESKTOP.filter(d => (!d.after || S.submitted) && (!d.grp || S.phase === 'group') && (!d.arc || archive().length)).forEach(d => {
     const b = OS.el('button', 'dicon' + (d.app ? ' app' : ''));
     b.innerHTML = `${Icons.get(d.icon)}<span></span>`;
     b.querySelector('span').textContent = d.name;
@@ -103,6 +120,7 @@ function openDesktop(k) {
     keihi: () => OS.dialog('表計算', '「経費精算_10月.xlsx」は、ほかのユーザー(tamura)が編集中のため開けません。\n\n読み取り専用で開くこともできません。', null, 'warn'),
     answer: openAnswer,
     group: () => openExplorer('group'),
+    archive: () => openExplorer('archive'),
   };
   (map[k] || (() => {}))();
 }
@@ -141,7 +159,7 @@ function folderFiles(cid) {
 }
 function folderList(path) {
   if (path === 'audition') {
-    const f = CANDIDATES.map(c => ({ name: `${c.no}_${c.name.replace(' ', '')}`, icon: 'folder', type: 'ファイル フォルダー', size: '', open: null, go: 'c:' + c.id }));
+    const f = RUN().map(c => ({ name: `${c.no}_${c.name.replace(' ', '')}`, icon: 'folder', type: 'ファイル フォルダー', size: '', open: null, go: 'c:' + c.id }));
     f.push({ name: '審査の流れ(社外秘).txt', icon: 'txt', type: 'テキスト ドキュメント', size: '1 KB', open: () => openText('flow', '審査の流れ(社外秘).txt', `2026 秋オーディション
 
 応募総数 1,186
@@ -157,6 +175,8 @@ function folderList(path) {
   }
   if (path.startsWith('c:')) return folderFiles(path.slice(2));
   if (path === 'group') return S.phase === 'group' ? G.explorerFiles() : [];
+  if (path === 'aud') return S.phase === 'group' ? G.audIds().map(C).map(c => ({ name: `${c.no}_${c.name.replace(' ', '')}`, icon: 'folder', type: 'ファイル フォルダー', size: '', open: null, go: 'c:' + c.id })) : [];
+  if (path === 'archive') return archive().map((a, i) => ({ name: `${a.name}(${a.span}・ランク${a.rank}).html`, icon: 'browser', type: a.ending, size: '', open: () => { openBrowser(); OS.wins.browser.go({ page: 'view', r: { type: 'archwiki', title: `${a.name} - みんなの百科事典`, html: a.html } }); } }));
   if (path === 'trash') return [
     { name: 'Lumière_あかり_卒業発表文_v3.docx', icon: 'doc', type: 'Word 文書', size: '18 KB', open: () => openText('akari', 'Lumière_あかり_卒業発表文_v3.docx(下書き)', `ファンのみなさまへ
 
@@ -177,14 +197,15 @@ Lumièreを卒業します。
   ];
   return [];
 }
-const PATH_NAME = { group: '共有 > 新グループ', audition: '共有 > オーディション2026秋', trash: 'ごみ箱', newfolder: 'デスクトップ > 新しいフォルダー (2)', downloads: 'ダウンロード' };
+const PATH_NAME = { aud: '共有 > 追加オーディション', archive: 'ドキュメント > 過去の担当グループ', group: '共有 > 新グループ', audition: '共有 > オーディション2026秋', trash: 'ごみ箱', newfolder: 'デスクトップ > 新しいフォルダー (2)', downloads: 'ダウンロード' };
 function openExplorer(path) {
   OS.open('explorer', {
     title: 'エクスプローラー', icon: 'folder', w: 760, h: 460,
     render(body, w) {
       if (!w.path) w.path = 'audition';
       const p = w.path;
-      const crumbs = p.startsWith('c:') ? `${PATH_NAME.audition} > ${C(p.slice(2)).no}_${C(p.slice(2)).name.replace(' ', '')}` : (PATH_NAME[p] || p);
+      const parentOf = id => S.run.includes(id) && !(S.phase === 'group' && G.audIds().includes(id)) ? 'audition' : 'aud';
+      const crumbs = p.startsWith('c:') ? `${PATH_NAME[parentOf(p.slice(2))]} > ${C(p.slice(2)).no}_${C(p.slice(2)).name.replace(' ', '')}` : (PATH_NAME[p] || p);
       const files = folderList(p);
       body.innerHTML = `
         <div class="ex-bar"><button class="flat" data-up title="上へ">${Icons.get('back')}</button><div class="addr"></div><div class="ex-search">${Icons.get('search')}<span>検索</span></div></div>
@@ -195,6 +216,8 @@ function openExplorer(path) {
             <button data-p="downloads">${Icons.get('folder')}ダウンロード</button>
             <div class="nav-h">共有</div>
             ${S.phase === 'group' ? `<button data-p="group">${Icons.get('folder')}新グループ</button>` : ''}
+            ${S.phase === 'group' && G.audIds().length ? `<button data-p="aud">${Icons.get('folder')}追加オーディション</button>` : ''}
+            ${archive().length ? `<button data-p="archive">${Icons.get('folder')}過去の担当グループ</button>` : ''}
             <button data-p="audition">${Icons.get('folder')}オーディション2026秋</button>
             <button data-p="lumiere">${Icons.get('folder')}Lumière</button>
             <button data-p="trash">${Icons.get('trash')}ごみ箱</button>
@@ -214,7 +237,7 @@ function openExplorer(path) {
         tr.ondblclick = act;
         tb.append(tr);
       });
-      body.querySelector('[data-up]').onclick = () => { if (w.path.startsWith('c:')) { w.path = 'audition'; OS.refresh('explorer'); } };
+      body.querySelector('[data-up]').onclick = () => { if (w.path.startsWith('c:')) { w.path = parentOf(w.path.slice(2)); OS.refresh('explorer'); } };
       body.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
         const k = b.dataset.p;
         if (k === 'desktop') { OS.close('explorer'); return; }
@@ -365,7 +388,7 @@ function openCompose() {
   OS.open('compose', {
     title: '新しいメッセージ', icon: 'mail', w: 560, h: 480,
     render(body) {
-      const opts = CANDIDATES.map(c => `<optgroup label="${escapeHtml(c.name)} の件">${c.contacts.map(k => `<option value="${c.id}|${k.key}" ${S.asked[k.key] ? 'disabled' : ''}>${escapeHtml(k.who)}(${escapeHtml(k.how)})${S.asked[k.key] ? ' ― 問い合わせ済み' : ''}</option>`).join('')}</optgroup>`).join('');
+      const opts = RUN().map(c => `<optgroup label="${escapeHtml(c.name)} の件">${c.contacts.map(k => `<option value="${c.id}|${k.key}" ${S.asked[k.key] ? 'disabled' : ''}>${escapeHtml(k.who)}(${escapeHtml(k.how)})${S.asked[k.key] ? ' ― 問い合わせ済み' : ''}</option>`).join('')}</optgroup>`).join('');
       body.innerHTML = `<div class="cp">
         <label><span>宛先</span><select><option value="">― 誰に聞くか選ぶ ―</option>${opts}</select></label>
         <label><span>件名</span><input class="subj" value=""></label>
@@ -408,13 +431,14 @@ const EXTRA_SEARCH = [
 function searchAll(q) {
   const n = q.replace(/[\s ]/g, '').toLowerCase();
   if (!n) return { hits: [], cands: [] };
-  const cands = CANDIDATES.filter(c => {
+  const known = new Set(S.run.concat(S.g ? Object.keys(S.g.m) : [], typeof G !== 'undefined' && S.g ? G.audIds() : []));
+  const cands = Array.from(known).map(C).filter(Boolean).filter(c => {
     const keys = [c.name.replace(' ', ''), c.kana.replace(' ', '')].concat(c.name.split(' '), c.kana.split(' '));
     return keys.some(k => k && n.includes(k));
   });
   let hits = [];
   cands.forEach(c => {
-    const xs = XSEARCH[c.id];
+    const xs = XSEARCH[c.id] || c.xsearch;
     if (xs) hits.push({ cid: c.id, type: 'xsearch', q: c.name.replace(' ', ''), title: `「${c.name.replace(' ', '')}」の検索結果 / Z`, site: 'Z', date: '', snippet: xs[0][3].replace(/\n/g, ' '), posts: xs });
     c.search.forEach(r => hits.push(Object.assign({ cid: c.id }, r)));
   });
@@ -422,7 +446,7 @@ function searchAll(q) {
   if (S.phase === 'group') hits = G.searchHits(n).concat(hits);
   return { hits, cands };
 }
-const SITE_URL = { wiki: 'https://minna-wiki.example.org/wiki/', x: 'https://z.example.com/', xsearch: 'https://z.example.com/search?q=', bbs: 'https://bbs.example.net/test/read.cgi/', sns: 'https://sns.example.com/', news: 'https://news.example.jp/article/', video: 'https://video.example.com/watch?v=', blog: 'https://blog.example.jp/entry/' };
+const SITE_URL = { archwiki: 'https://minna-wiki.example.org/wiki/', wiki: 'https://minna-wiki.example.org/wiki/', x: 'https://z.example.com/', xsearch: 'https://z.example.com/search?q=', bbs: 'https://bbs.example.net/test/read.cgi/', sns: 'https://sns.example.com/', news: 'https://news.example.jp/article/', video: 'https://video.example.com/watch?v=', blog: 'https://blog.example.jp/entry/' };
 function openBrowser(q) {
   OS.open('browser', {
     title: 'ヤマビコ検索 - ブラウザ', icon: 'browser', w: 860, h: 560,
@@ -518,7 +542,8 @@ function zShell(head, inner) {
   return `<div class="z"><div class="zcol"><div class="zbar"><span class="zlogo">Z</span><div class="zsearch">${Icons.get('search')}<span>${escapeHtml(head)}</span></div></div>${inner}</div></div>`;
 }
 function renderSite(r) {
-  if (r.type === 'wiki') return G.wikiHtml();
+  if (r.type === 'wiki') return S.g && S.g.finalHtml || G.wikiHtml();
+  if (r.type === 'archwiki') return r.html;
   if (r.type === 'xsearch') return zShell(r.q, `<div class="ztabs"><span class="on">話題</span><span>最新</span><span>アカウント</span><span>メディア</span></div>
     ${r.posts.map(p => xPost(...p)).join('')}<div class="zend">これ以上の結果はありません</div>`);
   if (r.type === 'x') {
@@ -568,13 +593,18 @@ function openChat(room) {
       body.querySelector('.ch-h span').textContent = r.name + (r.members ? `(${r.members})` : '');
       body.querySelector('.ch-back').onclick = () => { w.inRoom = false; OS.refresh('chat'); };
       const lg = body.querySelector('.ch-log');
-      r.log.forEach(m => {
+      r.log.forEach((m, idx) => {
         if (!m[0]) { lg.append(OS.el('div', 'msg-sys', escapeHtml(m[2]))); return; }
         const me = m[0] === '自分';
         const d = OS.el('div', 'msg' + (me ? ' me' : ''));
         d.innerHTML = `${me ? '' : `<span class="av">${escapeHtml(m[0][0])}</span>`}<div><div class="msg-n">${me ? '' : escapeHtml(m[0])}</div><div class="bub"></div></div><span class="msg-t">${me ? '既読<br>' : ''}${escapeHtml(m[1].split(' ')[1] || '')}</span>`;
         d.querySelector('.bub').textContent = m[2];
         lg.append(d);
+        if (m[3] && m[3].chosen == null && S.g && !S.g.done) {
+          const c = OS.el('div', 'msg-ch');
+          m[3].choices.forEach((t, ci) => { const b = OS.el('button', 'btn'); b.textContent = t; b.onclick = () => G.chatChoose(w.room, idx, ci); c.append(b); });
+          lg.append(c);
+        }
       });
       lg.scrollTop = lg.scrollHeight;
       setTimeout(() => { lg.scrollTop = lg.scrollHeight; });
@@ -618,7 +648,7 @@ function openCalendar() {
   });
 }
 function pickInterview() {
-  const left = CANDIDATES.filter(c => !S.interviewed[c.id]);
+  const left = RUN().filter(c => !S.interviewed[c.id]);
   OS.open('pick', {
     title: '追加面接に呼ぶ人', icon: 'calendar', w: 360, h: 420,
     render(body) {
@@ -642,7 +672,7 @@ function openSheet() {
     title: '選考表_最終(2).xlsx - 表計算', icon: 'sheet', w: 900, h: 520,
     render(body, w) {
       w.tab = w.tab || 'main';
-      const passN = CANDIDATES.filter(c => S.sheet[c.id].j === '合格').length;
+      const passN = RUN().filter(c => S.sheet[c.id].j === '合格').length;
       const cols = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
       let rows = '';
       const blank = () => cols.map((c, i) => `<td class="${i === 3 || i === 4 ? 'nx' : ''}"></td>`).join('');
@@ -651,7 +681,7 @@ function openSheet() {
         rows += R(1, `<td colspan="7" class="title">2026秋オーディション 最終選考表</td>`);
         rows += R(2, `<td colspan="7" class="sub">※判定は「合格」「保留」「不合格」から選ぶ。メモは自由に</td>`);
         rows += R(3, ['No', '氏名', '年齢', '出身', '経歴', '判定', 'メモ'].map((h, i) => `<td class="hd ${i === 3 || i === 4 ? 'nx' : ''}">${h}</td>`).join(''));
-        CANDIDATES.forEach((c, i) => {
+        RUN().forEach((c, i) => {
           const v = S.sheet[c.id];
           rows += R(4 + i, `<td class="num">${c.no}</td><td>${escapeHtml(c.name)}</td><td class="num">${c.age}</td><td class="nx">${escapeHtml(c.from.slice(0, 3))}</td><td class="nx">${escapeHtml(c.career)}</td>
             <td class="j ${v.j === '合格' ? 'ok' : v.j === '不合格' ? 'ng' : ''}"><select data-j="${c.id}" ${S.submitted ? 'disabled' : ''}><option></option>${['合格', '保留', '不合格'].map(o => `<option ${v.j === o ? 'selected' : ''}>${o}</option>`).join('')}</select></td>
@@ -698,18 +728,18 @@ function openSheet() {
   });
 }
 function trySubmit() {
-  const pass = CANDIDATES.filter(c => S.sheet[c.id].j === '合格');
+  const pass = RUN().filter(c => S.sheet[c.id].j === '合格');
   if (pass.length < 4 || pass.length > 5) {
     OS.dialog('送信できません', `合格が ${pass.length} 人になっています。\n部長からは「4人か5人」と言われています。`, null, 'warn');
     return;
   }
-  const hold = CANDIDATES.filter(c => !S.sheet[c.id].j || S.sheet[c.id].j === '保留');
+  const hold = RUN().filter(c => !S.sheet[c.id].j || S.sheet[c.id].j === '保留');
   OS.dialog('部長にメールで送る', `この内容で送りますか?\n\n合格: ${pass.map(c => c.name.replace(' ', '')).join('、')}${hold.length ? `\n\n(判定が空欄・保留の人が ${hold.length} 人います。不合格として扱われます)` : ''}\n\n送ったあとは変更できません。`,
     [{ label: '送信', primary: true, fn: submit }, { label: 'キャンセル' }], 'info');
 }
 function submit() {
   S.submitted = true;
-  const pass = CANDIDATES.filter(c => S.sheet[c.id].j === '合格');
+  const pass = RUN().filter(c => S.sheet[c.id].j === '合格');
   save();
   OS.refresh('sheet'); OS.refresh('calendar'); renderDesktop();
   const L = {
@@ -725,7 +755,7 @@ function submit() {
   setTimeout(() => addMail({ id: 'boss2', from: '桐谷 誠(部長)', addr: 'kiritani@mitsuba-pro.co.jp', date: WEEK.days[now().day] + ' ' + now().time, subject: 'Re: 選考表', body:
 `確認しました。この${pass.length}人でいきましょう。
 
-${pass.map(c => '・' + L[c.id]).join('\n')}
+${pass.map(c => '・' + (L[c.id] || `${c.name.split(' ')[0]}は${{ chika: '経験者なので現場をまとめてもらう。', newbie: '何もできないところから育てることになる。根気よく。', singer: '歌は任せられる。グループに馴染むかどうか。', dancer: 'ダンスの軸にする。', model: '見た目と数字は武器になる。', actress: '現場慣れしているのは助かる。', ota: 'MCとまとめ役を期待する。', athlete: '体力は一番ある。', creator: '配信とSNSは任せられそう。', local: '地元の応援は武器になる。' }[c.arche] || '期待している。'}`)).join('\n')}
 
 本人たちへの連絡は明日、私からします。
 グループのチャットを作っておくので、顔合わせまでに挨拶しておいてください。
@@ -753,7 +783,7 @@ function openAnswer() {
   };
   openText('answer', '答え合わせ(開発用).txt', `※開発用。本番では見えない情報です(数字は 1〜10)
 
-${CANDIDATES.map(line).join('\n\n')}`);
+${RUN().map(line).join('\n\n')}`);
 }
 
 // ---------- スタートメニュー ----------
@@ -803,7 +833,7 @@ function boot() {
   document.getElementById('tb-search').onsubmit = e => { e.preventDefault(); const v = e.target.querySelector('input').value; e.target.querySelector('input').value = ''; openBrowser(v); };
   const lock = document.getElementById('lock');
   // 途中で閉じた場合の続き
-  const pass = () => CANDIDATES.filter(c => S.sheet[c.id].j === '合格').map(c => c.id);
+  const pass = () => RUN().filter(c => S.sheet[c.id].j === '合格').map(c => c.id);
   if (S.submitted && (S.phase !== 'group' || !S.g.name)) setTimeout(() => OS.dialog('オーディション終了', 'ここから、グループ結成後の1か月が始まります。', [{ label: '1週間後へ', primary: true, fn: () => G.start(pass()) }], 'info'), 900);
   if (S.booted) { lock.remove(); return; }
   lock.querySelector('.lk-time').textContent = '9:12';

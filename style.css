@@ -521,3 +521,9 @@ svg { display: block; }
 }
 .cal.wk { grid-template-rows: auto 1fr 1fr; }
 .cal-left b.pos { color: #1b1b1b; }
+.msg-ch { align-self: flex-end; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; }
+.msg-ch .btn { background: #fff; }
+.ev.priv { background: #efe7f7 !important; color: #5b3b7a; border-left: 3px solid #9b72c4; }
+.cal-scroll { flex: 1; overflow: auto; display: flex; flex-direction: column; gap: 8px; padding-bottom: 4px; }
+.cal-scroll .cal { flex: none; min-height: 220px; }
+.cal-go .sp { flex: 1; }
