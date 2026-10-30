@@ -66,10 +66,17 @@ const OS = (() => {
     if (!w) return;
     if (opt) { w.opt = Object.assign(w.opt, opt); }
     if (w.opt.title) { w.title = w.opt.title; w.el.querySelector('.ttext').textContent = w.opt.title; }
+    // 中のリストのスクロール位置を覚えておいて、描き直したあとに戻す
+    const KEEP = w.opt.keep || ['.ml-list', '.ml-read', '.ex-list', '.ch-list', '.cal-scroll', '.xl-grid', '.asg-list', '.plan', '.br-page'];
     const st = w.body.scrollTop;
+    const pos = {};
+    KEEP.forEach(q => { const e = w.body.querySelector(q); if (e) pos[q] = e.scrollTop; });
     w.body.innerHTML = '';
     w.opt.render(w.body, w);
     w.body.scrollTop = st;
+    const skip = w.skipKeep || [];
+    KEEP.forEach(q => { const e = w.body.querySelector(q); if (e && pos[q] != null && !skip.includes(q)) e.scrollTop = pos[q]; });
+    w.skipKeep = null;
     renderTaskbar();
   }
 

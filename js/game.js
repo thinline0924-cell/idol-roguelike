@@ -338,15 +338,17 @@ function openMail() {
     title: 'メール', icon: 'mail', w: 860, h: 520,
     render(body, w) {
       w.box = w.box || 'inbox';
-      const list = S.mails.filter(m => m.box === w.box);
-      if (!w.sel && w.box === 'inbox') w.sel = 'boss1';
-      const cur = S.mails.find(m => m.id === w.sel && m.box === w.box);
+      const inBox = m => w.box === 'flag' ? m.flag : m.box === w.box;
+      const list = S.mails.filter(inBox);
+      if (!w.sel && w.box === 'inbox' && S.phase !== 'group') w.sel = 'boss1';
+      const cur = S.mails.find(m => m.id === w.sel && inBox(m));
       const cnt = b => S.mails.filter(m => m.box === b && m.unread).length;
       body.innerHTML = `
         <div class="ml-bar"><button class="btn primary" data-new ${S.submitted ? 'hidden' : ''}>${Icons.get('pen')}問い合わせを書く</button>${S.phase === 'group' && S.g && S.g.name && !S.g.done ? `<button class="btn primary" data-rep>${Icons.get('pen')}予定を部長に報告する(次へ進む)</button>` : ''}<span class="ml-acct">p-new@mitsuba-pro.co.jp</span></div>
         <div class="ml-main ${cur && OS.isNarrow() ? 'reading' : ''}">
           <nav class="ml-nav">
             <button data-b="inbox" class="${w.box === 'inbox' ? 'on' : ''}">受信トレイ<em>${cnt('inbox') || ''}</em></button>
+            <button data-b="flag" class="${w.box === 'flag' ? 'on' : ''}">★ 印つき<em class="g">${S.mails.filter(m => m.flag).length || ''}</em></button>
             <button data-b="sent" class="${w.box === 'sent' ? 'on' : ''}">送信済み</button>
             <button disabled>下書き</button><button disabled>迷惑メール<em class="g">38</em></button>
           </nav>
@@ -358,22 +360,24 @@ function openMail() {
       list.forEach(m => {
         const it = OS.el('button', 'ml-item' + (m.unread ? ' unread' : '') + (cur === m ? ' sel' : ''));
         const tag = m.job ? (m.jobState === 'open' ? '<em class="tag req">要返信</em>' : m.jobState === 'accepted' ? '<em class="tag ok">受けた</em>' : '') : m.choices && m.chosen == null ? '<em class="tag req">対応が必要</em>' : '';
-        it.innerHTML = `<div class="ml-from"></div><div class="ml-subj"></div><div class="ml-date">${m.date}${tag}</div>`;
+        it.innerHTML = `<span class="ml-star ${m.flag ? 'on' : ''}" title="印をつける/外す">${m.flag ? '★' : '☆'}</span><div class="ml-from"></div><div class="ml-subj"></div><div class="ml-date">${m.date}${tag}</div>`;
+        it.querySelector('.ml-star').onclick = e => { e.stopPropagation(); m.flag = !m.flag; save(); OS.refresh('mail'); };
         it.querySelector('.ml-from').textContent = w.box === 'sent' ? '宛先: ' + m.to : m.from;
         it.querySelector('.ml-subj').textContent = m.subject;
-        it.onclick = () => { w.sel = m.id; m.unread = false; save(); updateClock(); OS.refresh('mail'); };
+        it.onclick = () => { if (w.sel !== m.id) w.skipKeep = ['.ml-read']; w.sel = m.id; m.unread = false; save(); updateClock(); OS.refresh('mail'); };
         lb.append(it);
       });
       const rd = body.querySelector('.ml-read');
       if (cur) {
-        rd.innerHTML = `<button class="flat ml-backbtn">${Icons.get('back')}一覧</button><h3></h3><div class="ml-meta"><span class="av">${escapeHtml((cur.from || '自分')[0])}</span><div><div class="who"></div><div class="ml-addr">${escapeHtml(cur.addr || '')}　${cur.date}</div></div></div><div class="ml-body"></div>`;
+        rd.innerHTML = `<button class="flat ml-backbtn">${Icons.get('back')}一覧</button><button class="btn ml-flag ${cur.flag ? 'on' : ''}">${cur.flag ? '★ 印を外す' : '☆ 印をつける'}</button><h3></h3><div class="ml-meta"><span class="av">${escapeHtml((cur.from || '自分')[0])}</span><div><div class="who"></div><div class="ml-addr">${escapeHtml(cur.addr || '')}　${cur.date}</div></div></div><div class="ml-body"></div>`;
         rd.querySelector('h3').textContent = cur.subject;
         rd.querySelector('.who').textContent = w.box === 'sent' ? '自分 → ' + cur.to : cur.from;
         rd.querySelector('.ml-body').innerHTML = textHtml(cur.body);
         rd.querySelector('.ml-backbtn').onclick = () => { w.sel = null; OS.refresh('mail'); };
+        rd.querySelector('.ml-flag').onclick = () => { cur.flag = !cur.flag; save(); OS.refresh('mail'); };
         if (S.phase === 'group' && (cur.job || cur.choices)) G.mailActions(rd, cur);
       } else rd.innerHTML = '<div class="empty">読むメッセージを選んでください</div>';
-      body.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { w.box = b.dataset.b; w.sel = null; OS.refresh('mail'); });
+      body.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { w.box = b.dataset.b; w.sel = null; w.skipKeep = ['.ml-list', '.ml-read']; OS.refresh('mail'); });
       body.querySelector('[data-new]').onclick = openCompose;
       const rp = body.querySelector('[data-rep]'); if (rp) rp.onclick = () => G.report();
     },
@@ -445,9 +449,10 @@ function searchAll(q) {
   });
   EXTRA_SEARCH.forEach(e => { if (e.q.some(k => n.includes(k))) hits = hits.concat(e.res); });
   if (S.phase === 'group') hits = G.searchHits(n).concat(hits);
+  hits = hits.concat(WEB.searchHits(n));
   return { hits, cands };
 }
-const SITE_URL = { archwiki: 'https://minna-wiki.example.org/wiki/', wiki: 'https://minna-wiki.example.org/wiki/', x: 'https://z.example.com/', xsearch: 'https://z.example.com/search?q=', bbs: 'https://bbs.example.net/test/read.cgi/', sns: 'https://sns.example.com/', news: 'https://news.example.jp/article/', video: 'https://video.example.com/watch?v=', blog: 'https://blog.example.jp/entry/' };
+const SITE_URL = { zhome: 'https://z.example.com/home', bbsidx: 'https://bbs.example.net/idol/', newsidx: 'https://dolnavi.example.jp/', chart: 'https://dolnavi.example.jp/chart', wikiidx: 'https://minna-wiki.example.org/', archwiki: 'https://minna-wiki.example.org/wiki/', wiki: 'https://minna-wiki.example.org/wiki/', x: 'https://z.example.com/', xsearch: 'https://z.example.com/search?q=', bbs: 'https://bbs.example.net/test/read.cgi/', sns: 'https://sns.example.com/', news: 'https://news.example.jp/article/', video: 'https://video.example.com/watch?v=', blog: 'https://blog.example.jp/entry/' };
 function openBrowser(q) {
   OS.open('browser', {
     title: 'ヤマビコ検索 - ブラウザ', icon: 'browser', w: 860, h: 560,
@@ -461,13 +466,18 @@ function openBrowser(q) {
       if (cur.page === 'results') url += 'search?q=' + encodeURIComponent(cur.q);
       if (cur.page === 'view') {
         const r = cur.r;
-        url = SITE_URL[r.type] + (r.type === 'xsearch' ? encodeURIComponent(r.q) + '&src=typed_query' : r.type === 'x' ? xHandle(r.title).id : Math.abs(hash(r.title)) % 99999999);
+        url = (SITE_URL[r.type] || 'https://example.jp/') + (['zhome', 'bbsidx', 'newsidx', 'chart', 'wikiidx'].includes(r.type) ? '' : r.type === 'xsearch' ? encodeURIComponent(r.q) + '&src=typed_query' : r.type === 'x' ? xHandle(r.title).id : Math.abs(hash(r.title)) % 99999999);
       }
       body.innerHTML = `
         <div class="br-tabs"><div class="br-tab on">${Icons.get('browser')}<span class="tt"></span></div><div class="br-plus">+</div></div>
         <div class="br-bar"><button class="flat" data-back ${w.pos ? '' : 'disabled'}>${Icons.get('back')}</button><button class="flat" data-fwd ${w.pos < w.stack.length - 1 ? '' : 'disabled'}>${Icons.get('fwd')}</button><button class="flat">${Icons.get('reload')}</button>
           <div class="br-url">${Icons.get('lock')}<span></span></div></div>
+        <div class="br-marks">${WEB.BOOKMARKS.map(([t, k]) => `<button data-mark="${k}">${escapeHtml(t)}</button>`).join('')}</div>
         <div class="br-page"></div>`;
+      body.querySelectorAll('[data-mark]').forEach(b => b.onclick = () => { const k = b.dataset.mark; if (k === 'home') go({ page: 'home' }); else go({ page: 'view', r: { type: k, title: b.textContent } }); w.skipKeep = ['.br-page']; });
+      // ページの中のリンク(押すとそのページへ)
+      const reg = [];
+      const link = (label, r, extra) => `<a href="#" data-nav="${reg.push(r) - 1}">${label}</a>${extra ? `<small class="nav-x">(${extra})</small>` : ''}`;
       body.querySelector('.br-url span').textContent = url;
       body.querySelector('[data-back]').onclick = () => { w.pos--; OS.refresh('browser'); };
       body.querySelector('[data-fwd]').onclick = () => { w.pos++; OS.refresh('browser'); };
@@ -476,9 +486,9 @@ function openBrowser(q) {
       if (cur.page === 'home') {
         tt.textContent = 'ヤマビコ検索';
         pg.innerHTML = `<div class="yh"><div class="logo">ヤマビコ<small>検索</small></div><form class="sbox"><input placeholder="名前やキーワードを入れてください" enterkeyhint="search"><button>${Icons.get('search')}</button></form>
-          <div class="yh-note">候補者のことを初めて調べると、今週の空き時間を1コマ使います(あと ${freeLeft()} コマ)</div>
+          ${S.phase === 'group' ? '' : `<div class="yh-note">候補者のことを初めて調べると、今週の空き時間を1コマ使います(あと ${freeLeft()} コマ)</div>`}
           ${S.history.length ? `<div class="yh-hist"><div>最近の検索</div>${S.history.slice(-6).reverse().map(h => `<button>${escapeHtml(h)}</button>`).join('')}</div>` : ''}
-          <div class="yh-news"><div>ニュース</div><p>・円安で来日公演の中止相次ぐ</p><p>・「推し活」の平均出費、月2.3万円 調査</p><p>・都内で今季一番の冷え込み</p></div></div>`;
+          <div class="yh-news"><div>ニュース</div>${WEB.homeNews(link)}</div></div>`;
         bindSearch(pg, go);
         pg.querySelectorAll('.yh-hist button').forEach(b => b.onclick = () => doSearch(b.textContent, go));
       } else if (cur.page === 'results') {
@@ -496,13 +506,14 @@ function openBrowser(q) {
           d.querySelector('.yr-site').textContent = r.site + (r.date ? ' ・ ' + r.date : '');
           d.querySelector('.yr-title').textContent = r.title;
           d.querySelector('.yr-snip').textContent = r.snippet;
-          d.querySelector('a').onclick = e => { e.preventDefault(); go({ page: 'view', r }); };
+          d.querySelector('a').onclick = e => { e.preventDefault(); w.skipKeep = ['.br-page']; go({ page: 'view', r }); };
           L.append(d);
         });
       } else {
         tt.textContent = cur.r.title;
-        pg.innerHTML = renderSite(cur.r);
+        pg.innerHTML = WEB.render(cur.r, link) || renderSite(cur.r);
       }
+      pg.querySelectorAll('[data-nav]').forEach(a => a.onclick = e => { e.preventDefault(); w.skipKeep = ['.br-page']; go({ page: 'view', r: reg[+a.dataset.nav] }); });
     },
   });
   if (q) doSearch(q, OS.wins.browser.go);
@@ -613,15 +624,24 @@ function openChat(room) {
         e.preventDefault();
         const v = body.querySelector('input').value.trim();
         if (!v) return;
-        r.log.push(['自分', WEEK.days[now().day] + ' ' + now().time, v]);
+        r.log.push(['自分', S.phase === 'group' ? '' : WEEK.days[now().day] + ' ' + now().time, v]);
         save(); OS.refresh('chat');
+        if (S.phase === 'group' && w.room === 'group') G.replyP();
       };
     },
   });
 }
 function pushChat(room, who, text) {
   const r = S.chats[room];
-  r.log.push([who, WEEK.days[now().day] + ' ' + now().time, text]);
+  let stamp = WEEK.days[now().day] + ' ' + now().time;
+  if (S.phase === 'group' && S.g) {
+    // 時刻は夕方から少しずつ進める(日付が変わったら戻す)
+    const d = G.clockDate().slice(5);
+    if (!S.chatClock || S.chatClock.d !== d) S.chatClock = { d, m: 18 * 60 + Math.floor(Math.random() * 90) };
+    S.chatClock.m = Math.min(23 * 60 + 59, S.chatClock.m + 1 + Math.floor(Math.random() * 6));
+    stamp = `${d} ${Math.floor(S.chatClock.m / 60)}:${String(S.chatClock.m % 60).padStart(2, '0')}`;
+  }
+  r.log.push([who, stamp, text]);
   const w = OS.wins.chat;
   if (!(w && w.room === room && !w.el.classList.contains('min'))) S.chatUnread[room] = (S.chatUnread[room] || 0) + 1;
   save(); updateClock(); OS.refresh('chat');

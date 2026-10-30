@@ -55,6 +55,13 @@ const G = (() => {
   const invites = id => (hw(id).invite || []).concat(C(id).invite || []);
 
   // ---------- 予定表 ----------
+  // 日付のマス(S.g.slots)には固定の用事と仕事だけが入る。
+  // プレイヤーが決める「やること」は週に3つまで(S.g.plans)
+  const PER_WEEK = 3;
+  const freshPlans = () => Array((S.g.len / 7) * PER_WEEK).fill(null);
+  const plans = () => S.g.plans || (S.g.plans = freshPlans());
+  const planSlot = p => (Math.floor(p / PER_WEEK) * 7 + 1 + (p % PER_WEEK) * 2) * 2;   // 報告用の日付(火・木・土)
+  const planLabel = p => `第${Math.floor(p / PER_WEEK) + 1}週の予定${'①②③'[p % PER_WEEK]}`;
   function freshSlots() {
     const s = Array(S.g.len * 2).fill(null);
     for (let w = 0; w < S.g.len / 7; w++) {
@@ -259,20 +266,21 @@ ${desc}
   const SALES = { live: 'ライブハウス', event: 'イベント制作会社', media: 'テレビ局・出版社', corp: '企業(広告・配信)' };
   function openPlan(i) {
     OS.open('plan', {
-      title: `${slotLabel(i)} の予定`, icon: 'calendar', w: 460, h: 560,
+      title: `${S.g.len > 7 ? planLabel(i) : '今週の予定' + '①②③'[i % PER_WEEK]}`, icon: 'calendar', w: 460, h: 620,
       render(body) {
         const lv = S.g.love && S.g.m[S.g.love.id] && M(S.g.love.id).status !== 'left' ? S.g.love.id : null;
         body.innerHTML = `<div class="plan">
           <h4>レッスン <small>全員参加・¥40,000・疲れがたまる</small></h4><div class="pl-row">${Object.entries(LESSON).map(([k, v]) => `<button class="btn" data-k="lesson" data-v="${k}">${v}</button>`).join('')}</div>
           <h4>面談 <small>ひとりと話す</small></h4><div class="pl-row">${active().map(id => `<button class="btn" data-k="talk" data-v="${id}">${escapeHtml(full(id))}</button>`).join('')}</div>
+          <h4>休ませる <small>疲れがとれる・機嫌が少し上がる</small></h4><div class="pl-row"><button class="btn" data-k="off" data-v="all">全員オフ</button>${active().map(id => `<button class="btn" data-k="off" data-v="${id}">${escapeHtml(nm(id))}を休ませる${M(id).fat >= 60 ? '(疲れている)' : ''}</button>`).join('')}</div>
           <h4>SNS運営 <small>グループのZアカウント</small></h4><div class="pl-col">${Object.entries(SNS).map(([k, v]) => `<button class="btn" data-k="sns" data-v="${k}">${v}</button>`).join('')}</div>
           <h4>営業 <small>次の依頼が増える</small></h4><div class="pl-row">${Object.entries(SALES).map(([k, v]) => `<button class="btn" data-k="sales" data-v="${k}">${v}</button>`).join('')}</div>
           ${S.g.aud && !S.g.aud.done ? `<h4>追加オーディション <small>候補者と会う</small></h4><div class="pl-row">${S.g.aud.ids.filter(id => !(S.g.aud.met || []).includes(id)).map(id => `<button class="btn" data-k="meet" data-v="${id}">${escapeHtml(C(id).name)}</button>`).join('')}</div>` : ''}
           ${lv ? `<h4>私用 <small>誰にも見られないように</small></h4><div class="pl-row"><button class="btn" data-k="date" data-v="${lv}">${escapeHtml(nm(lv))}と会う</button><button class="btn" data-k="breakup" data-v="${lv}">${escapeHtml(nm(lv))}と別れ話をする</button></div>` : ''}</div>`;
         body.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
           const k = b.dataset.k, v = b.dataset.v;
-          const label = { lesson: () => `レッスン: ${LESSON[v]}`, talk: () => `面談: ${full(v)}`, sns: () => `SNS: ${SNS[v].replace(/\(.+\)/, '')}`, sales: () => `営業: ${SALES[v]}`, meet: () => `候補者と面接: ${C(v).name.replace(' ', '')}`, date: () => '私用', breakup: () => '私用' }[k]();
-          S.g.slots[i] = { kind: k, v, label };
+          const label = { off: () => v === 'all' ? '全員オフ' : `休み: ${full(v)}`, lesson: () => `レッスン: ${LESSON[v]}`, talk: () => `面談: ${full(v)}`, sns: () => `SNS: ${SNS[v].replace(/\(.+\)/, '')}`, sales: () => `営業: ${SALES[v]}`, meet: () => `候補者と面接: ${C(v).name.replace(' ', '')}`, date: () => '私用', breakup: () => '私用' }[k]();
+          plans()[i] = { kind: k, v, label };
           save(); OS.close('plan'); OS.refresh('calendar'); sticky();
         });
       },
@@ -288,15 +296,20 @@ ${desc}
           grid += `<div class="cal wk"><div></div>${[0, 1, 2, 3, 4, 5, 6].map(d => `<div class="cal-d ${d > 4 ? 'we' : ''}">${dayLabel(S.g.day + w * 7 + d)}</div>`).join('')}
           ${[0, 1].map(h => `<div class="cal-t">${h ? '午後' : '午前'}</div>${[0, 1, 2, 3, 4, 5, 6].map(d => {
             const i = (w * 7 + d) * 2 + h, s = S.g.slots[i];
-            if (s) return `<div class="ev ${s.kind === 'fixed' ? 'fixed' : s.kind === 'job' ? 'job' : s.kind === 'date' || s.kind === 'breakup' ? 'priv' : 'act'}">${escapeHtml(s.label)}${s.kind !== 'fixed' && s.kind !== 'job' && !S.g.done ? `<button class="x" data-x="${i}" title="取り消す">×</button>` : ''}</div>`;
-            return `<div class="ev free"><span>空き</span>${S.g.done ? '' : `<button class="btn" data-i="${i}">予定を入れる</button>`}</div>`;
-          }).join('')}`).join('')}</div>`;
+            if (s) return `<div class="ev ${s.kind === 'fixed' ? 'fixed' : 'job'}">${escapeHtml(s.label)}</div>`;
+            return `<div class="ev free"></div>`;
+          }).join('')}`).join('')}</div>
+          <div class="wk-plans"><b>${weeks > 1 ? `第${w + 1}週に` : 'この週に'}やること</b><span>(${PER_WEEK}つまで)</span>${[0, 1, 2].map(k => {
+            const p = w * PER_WEEK + k, pl = plans()[p];
+            if (pl) return `<div class="pl-card ${pl.kind === 'date' || pl.kind === 'breakup' ? 'priv' : pl.kind === 'fixed' ? 'fixed' : pl.kind === 'off' ? 'off' : ''}"><span>${'①②③'[k]} ${escapeHtml(pl.label)}</span>${pl.kind !== 'fixed' && !S.g.done ? `<button class="x" data-x="${p}" title="取り消す">×</button>` : ''}</div>`;
+            return `<div class="pl-card empty"><span>${'①②③'[k]}</span>${S.g.done ? '' : `<button class="btn" data-i="${p}">予定を入れる</button>`}</div>`;
+          }).join('')}</div>`;
         }
         body.innerHTML = `<div class="cal-h"><b>${turnName()}</b><span>${range()}${S.g.len > 7 ? '(2週間)' : ''}</span><span class="cal-left">予算 <b class="${S.g.money < 0 ? 'neg' : 'pos'}">${yen(S.g.money)}</b>${S.g.debt ? ` ・ 借金 <b class="neg">${yen(S.g.debt)}</b>` : ''}</span></div>
           <div class="cal-scroll">${grid}</div>
           <div class="cal-go">${S.g.done ? '<span>このランは終わりました</span>' : `<button class="btn" data-future>グループの今後…</button><span class="sp"></span><span>依頼の返事がまだ ${openJobs().length} 件</span><button class="btn primary" data-go>${Icons.get('mail')}予定を部長に報告する(次へ進む)</button>`}</div>`;
         body.querySelectorAll('[data-i]').forEach(b => b.onclick = () => openPlan(+b.dataset.i));
-        body.querySelectorAll('[data-x]').forEach(b => b.onclick = () => { S.g.slots[+b.dataset.x] = null; save(); OS.refresh('calendar'); sticky(); });
+        body.querySelectorAll('[data-x]').forEach(b => b.onclick = () => { plans()[+b.dataset.x] = null; save(); OS.refresh('calendar'); sticky(); });
         const go = body.querySelector('[data-go]'); if (go) go.onclick = confirmAdvance;
         const fu = body.querySelector('[data-future]'); if (fu) fu.onclick = future;
       },
@@ -312,12 +325,13 @@ ${desc}
   // 予定を部長にメールで報告すると、次のターンへ進む
   function confirmAdvance() {
     if (S.g.done) return;
-    const free = S.g.slots.filter(s => !s).length;
+    const free = plans().filter(s => !s).length;
     const warn = [];
     if (openJobs().length) warn.push(`返事をしていない依頼が ${openJobs().length} 件あります(送ると、断ったことになります)`);
     if (openChoices().length) warn.push(`対応していないメールが ${openChoices().length} 件あります(送ると、何もしなかったことになります)`);
-    if (free) warn.push(`カレンダーの空き時間が ${free} コマあります`);
-    const lines = S.g.slots.map((s, i) => s && s.kind !== 'fixed' ? `・${slotLabel(i)} ${s.kind === 'date' || s.kind === 'breakup' ? '私用' : s.label}` : null).filter(Boolean);
+    if (free) warn.push(`まだ決めていない予定が ${free} つあります`);
+    const lines = S.g.slots.map((s, i) => s && s.kind === 'job' ? `・${slotLabel(i)} ${s.label}` : null).filter(Boolean)
+      .concat(plans().map((s, p) => s && s.kind !== 'fixed' ? `・${S.g.len > 7 ? `第${Math.floor(p / PER_WEEK) + 1}週 ` : ''}${s.kind === 'date' || s.kind === 'breakup' ? '私用' : s.label}` : null).filter(Boolean));
     const body = `桐谷部長
 
 お疲れさまです。${S.g.name}の担当です。
@@ -390,9 +404,9 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
   function mf(id, k) { const m = M(id); if (m) m.mf *= k; }
   function flagM(id, k, v) { const m = M(id); if (m) m.flags[k] = v; }
   function book(n, label) {
-    const free = S.g.slots.map((s, i) => s ? -1 : i).filter(i => i >= 0 && ((i >> 1) % 7) < 5);
-    if (free.length < n) { OS.dialog('カレンダー', `平日の空き時間が ${n} コマ必要です。カレンダーの予定を取り消してから選んでください。`, null, 'warn'); return false; }
-    free.slice(0, n).forEach(i => S.g.slots[i] = { kind: 'fixed', label });
+    const free = plans().map((s, i) => s ? -1 : i).filter(i => i >= 0);
+    if (free.length < n) { OS.dialog('カレンダー', `予定の枠が ${n} つ必要です。カレンダーで予定を取り消してから選んでください。`, null, 'warn'); return false; }
+    free.slice(0, n).forEach(i => plans()[i] = { kind: 'fixed', label });
     return true;
   }
   const mgr = () => S.g.turn < 3 || S.g.flags.lumiEnd ? '佐野 美咲(マネージャー)' : pick(['佐野 美咲(マネージャー)', '現場マネージャー 新井']);
@@ -480,6 +494,16 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
     if (job.kind !== 'dinner' && job.k !== 'lastlive') zfrom(['bad', 'mid', 'good'][t3], { b, w: wv, likes: Math.max(30, fanGain) });
     mail.jobState = 'done';
     R.push(`■ ${when} ${mail.subject}\n出演: ${cast.map(nm).join('・')}${pay ? ' / 収入 ' + yen(pay) : ''}\n${txt.trim()}`);
+  }
+  function runOff(v, R, i) {
+    if (v === 'all') {
+      ready().forEach(id => { M(id).fat = clamp(M(id).fat - 22, 0, 100); moodAdd(id, 6); });
+      R.push(`■ 全員オフ\n${fresh('offall', ['寮で全員でたこ焼きパーティーをしたらしい。', 'みんな昼まで寝ていたらしい。', '何人かで買い物に行ったらしい。帰ってきた顔が明るかった。', '一日中、誰もグループのチャットに書き込まなかった。それでいい。', '近所の銭湯に全員で行ったらしい。'])}`);
+      return;
+    }
+    if (!S.g.m[v] || M(v).status === 'left') return;
+    M(v).fat = clamp(M(v).fat - 38, 0, 100); moodAdd(v, 8); trust(v, 3);
+    R.push(`■ 休み: ${full(v)}\n${fill(fresh('offone', ['{m}は一日寝ていたらしい。', '{m}から「ちゃんと休みました」と報告があった。', '{m}は実家に電話して、長いこと話していたらしい。', '{m}は映画を3本見たらしい。', '{m}は結局、自主練をしていたらしい。少しだけ。', '{m}は美容院に行ってきた。少し髪が短くなっていた。']), { m: nm(v) })}`);
   }
   function runLesson(v, R, i) {
     ledger(`レッスン(${LESSON[v]})`, 0, 40000);
@@ -601,9 +625,9 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
     Object.values(S.g.m).forEach(m => m.wjobs = 0);
     openJobs().forEach(m => { m.jobState = 'expired'; S.g.rel[m.job.ck || 'in'] = (S.g.rel[m.job.ck || 'in'] || 0) - 1; });
     openChoices().forEach(m => { m.chosen = -1; m.result = resolveNone(m); });
-    S.g.slots.forEach((s, i) => {
+    const runPlan = (s, i) => {
       if (!s) return;
-      if (s.kind === 'job') { const m = S.mails.find(x => x.id === s.mail); if (m && m.jobState !== 'done') runJob(m, R); }
+      if (s.kind === 'off') runOff(s.v, R, i);
       if (s.kind === 'lesson') runLesson(s.v, R, i);
       if (s.kind === 'talk') runTalk(s.v, R, i);
       if (s.kind === 'sns') runSNS(s.v, R, i);
@@ -611,7 +635,11 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
       if (s.kind === 'meet') runMeet(s.v, R, i);
       if (s.kind === 'date') runDate(s.v, R, i);
       if (s.kind === 'breakup') runBreakup(s.v, R, i);
-    });
+    };
+    for (let w = 0; w < weeks; w++) {
+      S.g.slots.forEach((s, i) => { if (s && s.kind === 'job' && Math.floor((i >> 1) / 7) === w) { const m = S.mails.find(x => x.id === s.mail); if (m && m.jobState !== 'done') runJob(m, R); } });
+      plans().forEach((s, p) => { if (Math.floor(p / PER_WEEK) === w) runPlan(s, planSlot(p)); });
+    }
     // シングルの発売
     if (S.g.release && S.g.release.turn === S.g.turn) releaseSingle(R);
     // お金
@@ -661,7 +689,7 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
     // 炎上の熱
     S.g.heat = Math.max(0, S.g.heat - 8 * weeks);
     // 交際のバレ度
-    if (S.g.love) S.g.love.bare = Math.max(0, S.g.love.bare - (S.g.slots.some(s => s && s.kind === 'date') ? 0 : 3 * weeks));
+    if (S.g.love) S.g.love.bare = Math.max(0, S.g.love.bare - (plans().some(s => s && s.kind === 'date') ? 0 : 3 * weeks));
     if (S.g.exLove) { S.g.exLove.bare -= 6 * weeks; if (S.g.exLove.bare <= 0) S.g.exLove = null; }
     // 週報
     const head = `報告 ${turnName()}(${range()})\n\nZフォロワー ${Math.round(S.g.fans).toLocaleString()}人\n予算 ${yen(S.g.money)}${S.g.debt ? '\n借金 ' + yen(S.g.debt) : ''}\n\n`;
@@ -677,7 +705,7 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
     birthdays(prevDay, S.g.day);
     const end = endCheck();
     if (end) finish(end);
-    else { S.g.slots = freshSlots(); turnStart(); }
+    else { S.g.slots = freshSlots(); S.g.plans = freshPlans(); turnStart(); }
     trimMails();
     save();
     refreshAll();
@@ -1004,7 +1032,7 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
     akari: { when: () => S.g.turn === 1, mail: () => ({ id: 'ev_akari', from: '桐谷 誠(部長)', subject: 'Lumièreの件(共有)', body: `Lumièreのあかりが、今週から休養に入ります。\n表向きは体調不良です。\n\n佐野さんはしばらくそっちにかかりきりになるので、\n新グループの現場は基本あなた一人で回してください。\n\n同じことを繰り返さないように。\n\n桐谷` }) },
     shiraishi: {
       when: () => S.g.turn === 0 && has('shiraishi'),
-      mail: () => ({ id: 'ev_shiraishi', from: '白石 健一', subject: '娘のことで', body: `突然のご連絡、失礼します。白石透子の父です。\n\n娘が東京へ行ったことを、私は昨日まで知りませんでした。\n妻が勝手に同意書に署名したことも。\n\n未成年の娘を、どういうおつもりで預かっているのか。\n今週中にご説明いただけない場合は、しかるべき手段を考えます。\n\n白石`, choices: ['長野へ行って直接説明する(平日の空き時間を2コマ使う)', '本人と母親に任せる', '会社の顧問弁護士から連絡してもらう(¥100,000)'] }),
+      mail: () => ({ id: 'ev_shiraishi', from: '白石 健一', subject: '娘のことで', body: `突然のご連絡、失礼します。白石透子の父です。\n\n娘が東京へ行ったことを、私は昨日まで知りませんでした。\n妻が勝手に同意書に署名したことも。\n\n未成年の娘を、どういうおつもりで預かっているのか。\n今週中にご説明いただけない場合は、しかるべき手段を考えます。\n\n白石`, choices: ['長野へ行って直接説明する(予定の枠を2つ使う)', '本人と母親に任せる', '会社の顧問弁護士から連絡してもらう(¥100,000)'] }),
       choose(i) {
         if (i === 0) { if (!book(2, '長野へ出張(白石家)')) return false; if (rnd() < .7) { S.g.flags.fatherOk = 1; trust('shiraishi', 15); return '父親は最後まで目を合わせなかったが、同意書に署名した。\n「一年。一年で何もなければ、連れて帰ります」'; } S.g.pend.push({ turn: S.g.turn + 1, fn: 'shiraishiCheck' }); return '話は平行線だった。帰りの新幹線で、透子からLINEが来た。「ごめんなさい」'; }
         if (i === 1) { S.g.pend.push({ turn: S.g.turn + 1, fn: 'shiraishiCheck' }); return '透子と母親に任せることにした。'; }
@@ -1130,22 +1158,56 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
   });
 
   // ---------- チャット・付箋・表・検索 ----------
+  // グループチャットの会話。だれかが話を振って、ほかのメンバーが返す
   function chatter() {
     if (S.g.done) return;
+    const rd = ready();
+    if (!rd.length) return;
+    const rested = active().filter(id => M(id).status === 'rest');
+    const newbie = rd.filter(id => S.g.day - M(id).join <= 60 && M(id).join > 0);
+    const avgMood = rd.reduce((a, id) => a + M(id).mood, 0) / rd.length;
+    const avgFat = rd.reduce((a, id) => a + M(id).fat, 0) / rd.length;
+    let when = avgMood >= 60 && avgFat < 55 ? 'good' : avgMood < 38 || avgFat > 70 ? 'bad' : 'mid';
+    if (rested.length && rnd() < .5) when = 'rest';
+    else if (newbie.length && rnd() < .4) when = 'new';
+    const need = t => new Set(t.lines.map(l => l[0]).filter(r => 'abc'.includes(r))).size;
+    let pool = TX.threads.filter(t => t.when === when && need(t) <= rd.length - (when === 'new' ? 1 : 0));
+    if (!pool.length) pool = TX.threads.filter(t => t.when === 'mid' && need(t) <= rd.length);
+    let t0 = 900;
+    if (pool.length) {
+      const th = fresh('thread_' + when, pool);
+      const others = rd.filter(id => !(when === 'new' && newbie.includes(id))).sort(() => rnd() - .5);
+      const role = { a: others[0], b: others[1] || others[0], c: others[2] || others[1] || others[0], r: rested[0], n: newbie[0] };
+      const names = {}; Object.entries(role).forEach(([k, id]) => { if (id) names[k] = nm(id); });
+      th.lines.forEach(([r, text]) => {
+        const id = role[r];
+        if (!id) return;
+        t0 += 900 + Math.min(1800, text.length * 40);
+        setTimeout(() => pushChat('group', full(id), fill(text, names)), t0);
+      });
+    }
+    // 季節の話題、ひとりごと
     const mo = date(S.g.day).getMonth() + 1;
-    if (S.g.turn > 0 && rnd() < .5 && TX.season[mo] && ready().length) { const id = pick(ready()); setTimeout(() => pushChat('group', full(id), fresh('season' + mo, TX.season[mo])), 4600); }
-    const ids = ready().sort(() => rnd() - .5).slice(0, 3);
-    ids.forEach((id, k) => setTimeout(() => {
-      const m = M(id), v = voiceOf(id), b = m.mood >= 60 && m.fat < 60 ? 'good' : m.mood >= 30 ? 'mid' : 'bad';
-      const pool = v[b].concat(rnd() < .45 ? TX.voiceCommon[b] : []);
-      pushChat('group', full(id), fresh(`v_${id}_${b}_${pool.length}`, pool));
-    }, 900 + k * 1100));
+    if (S.g.turn > 0 && rnd() < .4 && TX.season[mo]) { const id = pick(rd); setTimeout(() => pushChat('group', full(id), fresh('season' + mo, TX.season[mo])), t0 + 2600); }
+    else if (rnd() < .5) {
+      const id = pick(rd), m = M(id), v = voiceOf(id), bk = m.mood >= 60 && m.fat < 60 ? 'good' : m.mood >= 30 ? 'mid' : 'bad';
+      setTimeout(() => pushChat('group', full(id), fresh(`v_${id}_${bk}`, v[bk])), t0 + 2600);
+    }
+  }
+  // プレイヤーがグループに書き込んだら、だれかが返す
+  function replyP() {
+    if (!S.g || S.g.done) return;
+    const rd = ready().sort(() => rnd() - .5).slice(0, rnd() < .5 ? 1 : 2);
+    rd.forEach((id, k) => {
+      const m = M(id), bk = m.mood >= 60 ? 'good' : m.mood >= 30 ? 'mid' : 'bad';
+      setTimeout(() => pushChat('group', full(id), fresh('replyP_' + bk, TX.replyP[bk])), 1400 + k * 1700);
+    });
   }
   function sticky() {
     const n = document.getElementById('sticky');
     if (!n || !S.g) return;
-    const free = S.g.slots.filter(s => !s).length;
-    n.innerHTML = S.g.done ? `<b>おつかれさま</b><br>${escapeHtml(S.g.name)}<br>${escapeHtml((ENDS[S.g.ending] || [''])[0])}` : `<b>${turnName()}</b><br>${range()}<br>予算 ${yen(S.g.money)}${S.g.debt ? `<br><span class="neg">借金 ${yen(S.g.debt)}</span>` : ''}<br>Zフォロワー ${Math.round(S.g.fans).toLocaleString()}<br><br>空き ${free}コマ<br><a href="#" class="st-go">予定が決まったら<br>→ 部長にメールで報告!</a>`;
+    const free = plans().filter(s => !s).length;
+    n.innerHTML = S.g.done ? `<b>おつかれさま</b><br>${escapeHtml(S.g.name)}<br>${escapeHtml((ENDS[S.g.ending] || [''])[0])}` : `<b>${turnName()}</b><br>${range()}<br>予算 ${yen(S.g.money)}${S.g.debt ? `<br><span class="neg">借金 ${yen(S.g.debt)}</span>` : ''}<br>Zフォロワー ${Math.round(S.g.fans).toLocaleString()}<br><br>やること あと${free}つ<br><a href="#" class="st-go">予定が決まったら<br>→ 部長にメールで報告!</a>`;
     const a = n.querySelector('.st-go'); if (a) a.onclick = e => { e.preventDefault(); confirmAdvance(); };
   }
   function refreshAll() {
@@ -1191,7 +1253,7 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
   function start(pass) {
     S.phase = 'group';
     S.g = { name: '', turn: 0, day: 0, len: 7, money: 600000, debt: 0, fans: 300, peak: 300, heat: 0, m: {}, rel: {}, zlog: [], own: [], log: [], flags: {}, sales: [], pend: [], fired: {}, queue: [], ledger: [], files: [], done: false, evCool: {}, releases: [], used: {} };
-    S.g.slots = freshSlots();
+    S.g.slots = freshSlots(); S.g.plans = freshPlans();
     const base = { nanase: 1500, kuroda: 400, hayase: 300, mori: 120, kasai: 150 };
     pass.forEach(id => {
       const h = C(id).hidden;
@@ -1208,13 +1270,13 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
       turnStart();
       save();
       refreshAll();
-      OS.dialog('結成', `11月2日(月)。\n「${S.g.name}」の活動が始まります。\n\n・メールに仕事の依頼が届きます。受けるならメンバーを選びます\n・カレンダーの空き時間に、レッスン・面談・SNS運営・営業を入れます\n・予定が決まったら、メールで部長に予定を報告します。送ると次へ進みます
+      OS.dialog('結成', `11月2日(月)。\n「${S.g.name}」の活動が始まります。\n\n・メールに仕事の依頼が届きます。受けるならメンバーを選びます\n・カレンダーで、1週間に「やること」を3つまで決めます(レッスン・面談・休ませる・SNS運営・営業)\n・予定が決まったら、メールで部長に予定を報告します。送ると次へ進みます
   (メールの「予定を部長に報告する」、カレンダーの下、付箋のどこからでも)\n・最初の1か月は1週間ずつ、そのあとは2週間ずつ進みます\n\nランは、グループが終わるまで続きます。\n(解散・倒産・全員の卒業・あなたの解任)`, [{ label: 'メールを見る', primary: true, fn: openMail }], 'info');
     });
   }
 
   return {
-    start, openCalendar, mailActions, report: confirmAdvance, sheetTabs, sheetRows, explorerFiles, searchHits, wikiHtml, sticky, chatChoose,
+    start, openCalendar, mailActions, report: confirmAdvance, replyP, sheetTabs, sheetRows, explorerFiles, searchHits, wikiHtml, sticky, chatChoose,
     clockDate: () => { const t = date(S.g.day); return `${t.getFullYear()}/${String(t.getMonth() + 1).padStart(2, '0')}/${String(t.getDate()).padStart(2, '0')}`; },
     audIds: () => S.g && S.g.aud ? S.g.aud.ids : [],
   };
