@@ -89,6 +89,7 @@ const G = (() => {
     { k: 'kanmuri', kind: 'media', tier: 4, ck: 'media', client: 'BS東都 編成部', person: '編成 三上', subj: '冠番組のご提案', when: [[1, 1], [3, 1]], pay: 500000, min: 3, max: 12, w: { talk: 1, looks: .5 }, fans: 10000 },
     { k: 'arena', kind: 'oneman', tier: 4, ck: 'live', client: '横浜アリーナ(仮押さえ)', person: '制作 本郷', subj: 'アリーナ単独公演のご提案', when: [[6, 1]], pay: 'oneman', venue: 15000000, cap: 12000, min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .6 }, fans: 15000, cheki: 0, tired: 1.6 },
   ];
+  const BIG = ['oneman', 'oneman2', 'arena', 'cm', 'musictv', 'bigfes', 'kanmuri', 'tour'];
   const DESCKEY = { oneman2: 'oneman', arena: 'arena' };
   const SPECIAL = {
     debut: { k: 'debut', kind: 'live', client: 'ミツバ企画(社内)', person: '桐谷', subj: 'お披露目ライブの件(決定事項)', pay: 'ticket', min: 3, max: 12, w: { vocal: 1, dance: 1, talk: .4 }, fans: 200, cheki: 1, fixed: [5, 1], desc: '今週土曜にお披露目ライブをやります。会場は渋谷の小箱、キャパ80。全員出してください。これは決定です。' },
@@ -147,7 +148,8 @@ ${desc}
     if (S.g.gradShow) { out.push(makeJobMail(Object.assign({}, SPECIAL.gradshow, { subj: `${S.g.gradShow.map(nm).join('・')} 卒業公演の件`, desc: `${S.g.gradShow.map(full).join('・')}の卒業公演の日程を押さえました。全員出してください。` }), weeks - 1)); }
     if (S.g.lastLive) out.push(makeJobMail(SPECIAL.lastlive, weeks - 1));
     const used = new Set();
-    const okJob = j => j.tier <= tier() && !used.has(j.k) && !(j.once && S.g.flags['once_' + j.k]) && j.tier >= tier() - 2;
+    S.g.jobCool = S.g.jobCool || {};
+    const okJob = j => j.tier <= tier() && !used.has(j.k) && !(j.once && S.g.flags['once_' + j.k]) && j.tier >= tier() - 2 && (S.g.jobCool[j.k] || 0) <= S.g.turn;
     S.g.sales.forEach(ck => {
       const c = JOBS.filter(j => j.ck === ck && okJob(Object.assign({}, j, { tier: Math.max(0, j.tier - 1) })));
       if (c.length) { const j = pick(c); used.add(j.k); out.push(makeJobMail(j, Math.floor(rnd() * weeks))); }
@@ -200,6 +202,7 @@ ${desc}
           mail.cast = Array.from(body.querySelectorAll('input:checked')).map(i => i.value);
           mail.jobState = 'accepted';
           if (job.once) S.g.flags['once_' + job.k] = 1;
+          if (BIG.includes(job.k)) { S.g.jobCool = S.g.jobCool || {}; S.g.jobCool[job.k] = S.g.turn + 5; }
           S.g.slots[job.slot] = { kind: 'job', mail: mail.id, label: `${mail.from.replace(/(株式会社|編集部|実行委員会|運営事務局|\(仮押さえ\))/g, '').trim()}(${mail.cast.map(nm).join('・')})` };
           save(); OS.close('assign'); OS.refresh('mail'); OS.refresh('calendar'); sticky();
           OS.toast(APPS.calendar, '予定に入れました', `${slotLabel(job.slot)} ${mail.subject}`, openCalendar);
@@ -330,6 +333,7 @@ ${desc}
   const best = (ids, wts) => ids.slice().sort((a, b) => score(b, wts) - score(a, wts))[0];
   const worst = (ids, wts) => ids.slice().sort((a, b) => score(a, wts) - score(b, wts))[0];
   function gainFans(total, ids, nom) {
+    if (total > 0) total *= 25000 / (25000 + S.g.fans);
     total = Math.round(total);
     S.g.fans = Math.max(0, S.g.fans + total);
     S.g.peak = Math.max(S.g.peak || 0, S.g.fans);
@@ -407,7 +411,7 @@ ${desc}
     if (job.pay === 'ticket') { const att = Math.max(3, Math.round(S.g.fans * .012 * (.5 + q / 10) + rnd() * 8)); pay = att * 1000; txt += `\n動員 ${att}人。`; }
     else if (job.pay === 'gift') pay = Math.round(cast.reduce((a, id) => a + M(id).mf * (8 + rnd() * 20), 0) / 100) * 100;
     else if (job.pay === 'oneman') {
-      const att = Math.min(job.cap, Math.round(S.g.fans * (.04 + rnd() * .03) * (.6 + q / 12)));
+      const att = Math.min(job.cap, Math.round(S.g.fans * (.02 + rnd() * .02) * (.6 + q / 12)));
       ledger(`会場費(${job.client})`, 0, job.venue);
       pay = att * 3500;
       const fill_ = att / job.cap;
@@ -482,7 +486,7 @@ ${desc}
     L.push(m.mood < 25 ? fresh('t_md0', ['ほとんど目を合わせなかった。', '何を聞いても「はい」しか言わなかった。', '途中で泣き出した。理由は言わなかった。']) : m.mood < 50 ? fresh('t_md1', ['受け答えはするが、本音は言わない感じ。', '笑ってはいるが、どこか上の空だった。', '話は普通にできた。それだけだった。']) : fresh('t_md2', ['よく笑っていた。', '最近あった面白いことを3つも話してくれた。', '前より、自分のことを話すようになった。']));
     const T1 = TALK1[id] || [];
     if (m.talks < T1.length) L.push(T1[m.talks](m));
-    else { const pool = talkPool(id); L.push(pool.length ? fill(fresh('talk_' + id, pool), {}) : '世間話をした。'); }
+    else { const pool = talkPool(id), use = rnd() < .65 && pool.length ? pool : TX.talkCommon; L.push(fill(fresh('talk_' + id + (use === pool ? '' : '_c'), use), {})); }
     if (C(id).gen && m.talks === 2 && C(id).secret !== 'none' && m.trust >= 30) { L.push('「…Pさんだから言うんですけど」と前置きして、' + C(id).truth.replace(/。$/, '') + '、と打ち明けられた。'); m.flags.confide = 1; if (C(id).secret === 'rumor') m.flags.consent = 1; }
     if (m.flags.baito) { L.push('夜、アルバイトをしていることがわかった。「内緒にしててください」'); if (m.trust >= 30) { m.flags.baito = 0; L.push('やめるように言った。泣きながらうなずいた。'); } }
     if (m.flags.absent >= 3 && minor(id)) L.push(`学校の出席日数が気になっているらしい。(これまでに ${m.flags.absent} 回休ませた)`);
@@ -614,6 +618,15 @@ ${desc}
         zpost(`{g}の${nm(id)}ちゃん休養って…運営なにしてんの`, 300 + rnd() * 600);
       } else if (m.mood <= 12 && !m.flags.quitAsked) { m.flags.quitAsked = 1; S.g.queue.push({ ev: 'quit', id }); }
     });
+    // ファン離れ(何もしないと減る。結成から1年たつと新鮮さが薄れる)
+    const worked = S.g.slots.some(s => s && s.kind === 'job');
+    const churn = .012 + (S.g.day > 365 ? .005 : 0) + (S.g.day > 730 ? .005 : 0) + (worked ? 0 : .02) + S.g.heat / 4000;
+    const keep = Math.pow(1 - churn, weeks);
+    S.g.fans = Math.round(S.g.fans * keep);
+    active().forEach(id => M(id).mf *= Math.pow(.99, weeks));
+    if (!worked && S.g.turn > 2) zfrom('quiet', { likes: 40 + S.g.fans * .01 });
+    // 本社への上納
+    if (S.g.money > 3000000) { const up = Math.round((S.g.money - 3000000) * .5); ledger('本社への上納(利益の50%)', 0, up); }
     // 炎上の熱
     S.g.heat = Math.max(0, S.g.heat - 8 * weeks);
     // 交際のバレ度
@@ -721,7 +734,7 @@ ${desc}
     const cand = ready().filter(id => { const m = M(id); return S.g.day - m.join >= 240 && !m.flags.gradAsk && (m.flags.gradCool || 0) <= S.g.turn; });
     for (const id of cand) {
       const m = M(id), yrs = (S.g.day - m.join) / 365, age = ageOf(id);
-      const p = .03 + Math.max(0, yrs - 1) * .04 + Math.max(0, age - 22) * .025 + (m.mood < 35 ? .04 : 0) + (C(id).hidden.drive >= 8 && S.g.fans < 5000 ? .03 : 0);
+      const p = .03 + Math.max(0, yrs - 1) * .07 + Math.max(0, age - 22) * .025 + (m.mood < 35 ? .04 : 0) + (C(id).hidden.drive >= 8 && S.g.fans < 5000 ? .03 : 0);
       if (rnd() < p) {
         m.flags.gradAsk = 1;
         sendEvent('grad', { id: 'grad_' + id + '_' + S.g.turn, from: full(id), subject: fresh('gradsubj', ['お時間いただけますか', '大事なお話があります', '卒業のことで', '少しだけ、話を聞いてください']), body: `Pさん\n\n${fresh('gradopen', ['ずっと考えていたことがあります。', 'うまく言えるかわからないので、メールにしました。', '直接言おうと思ったんですけど、顔を見たら言えなくなりそうで。'])}\n\n${dreamOf(id)}。\n\n${fresh('gradclose', ['グループを卒業させてください。', '次の区切りで、卒業したいです。', 'わがままを言って、ごめんなさい。卒業させてください。'])}\n\n${nm(id)}`, choices: ['卒業を受け入れて、卒業公演を開く', '引き止める', 'もう少しだけ時間をくれと頼む'], gid: id });
@@ -1086,10 +1099,13 @@ ${desc}
   // ---------- チャット・付箋・表・検索 ----------
   function chatter() {
     if (S.g.done) return;
+    const mo = date(S.g.day).getMonth() + 1;
+    if (S.g.turn > 0 && rnd() < .5 && TX.season[mo] && ready().length) { const id = pick(ready()); setTimeout(() => pushChat('group', full(id), fresh('season' + mo, TX.season[mo])), 4600); }
     const ids = ready().sort(() => rnd() - .5).slice(0, 3);
     ids.forEach((id, k) => setTimeout(() => {
       const m = M(id), v = voiceOf(id), b = m.mood >= 60 && m.fat < 60 ? 'good' : m.mood >= 30 ? 'mid' : 'bad';
-      pushChat('group', full(id), fresh(`v_${id}_${b}`, v[b]));
+      const pool = v[b].concat(rnd() < .45 ? TX.voiceCommon[b] : []);
+      pushChat('group', full(id), fresh(`v_${id}_${b}_${pool.length}`, pool));
     }, 900 + k * 1100));
   }
   function sticky() {
