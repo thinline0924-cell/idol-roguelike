@@ -647,11 +647,11 @@ ${lines.length ? lines.join('\n') : '・(特に予定なし)'}
     ledger(`メンバー固定給(${n}人×${weeks}週)`, 0, 20000 * n * weeks);
     ledger(`寮・宣伝費(${weeks}週)`, 0, 48000 * weeks);
     if (tier() >= 2) ledger('スタッフ人件費', 0, 60000 * weeks * (tier() - 1));
-    if (S.g.debt) { const it = Math.round(S.g.debt * (Math.pow(1.02, weeks) - 1)); S.g.debt += it; S.g.ledger.push([turnName(), `借入金 利息(週2%×${weeks})`, 0, 0, S.g.money, it]); }
+    if (S.g.debt) { const it = Math.round(S.g.debt * (Math.pow(1.005, weeks) - 1)); S.g.debt += it; S.g.ledger.push([turnName(), `借入金 利息(週0.5%×${weeks})`, 0, 0, S.g.money, it]); }
     if (S.g.money < 0) {
       const need = Math.ceil(-S.g.money / 500000) * 500000;
       S.g.debt += need; ledger('社内貸付(借入)', need, 0);
-      post.push({ id: 'debt_' + S.g.turn, from: '経理 大西', addr: 'onishi@mitsuba-pro.co.jp', subject: fresh('debtsubj', ['【経理】新グループ予算の不足について', '【経理】追加の貸付について', '【経理】資金繰りのご報告']), body: `お疲れさまです。経理の大西です。\n\n新グループの予算がマイナスになったため、社内貸付として ${yen(need)} を計上しました。\n借入の合計は ${yen(S.g.debt)} です。\n\n${S.g.debt >= DEBT_MAX * .5 ? '会社として、これ以上はかなり厳しいです。\n上限(¥10,000,000)を超えた場合、会社そのものが持ちません。' : '利息は週2%です。「年」ではなく「週」です。'}\n\n経理 大西` });
+      post.push({ id: 'debt_' + S.g.turn, from: '経理 大西', addr: 'onishi@mitsuba-pro.co.jp', subject: fresh('debtsubj', ['【経理】新グループ予算の不足について', '【経理】追加の貸付について', '【経理】資金繰りのご報告']), body: `お疲れさまです。経理の大西です。\n\n新グループの予算がマイナスになったため、社内貸付として ${yen(need)} を計上しました。\n借入の合計は ${yen(S.g.debt)} です。\n\n${S.g.debt >= DEBT_MAX * .5 ? '会社として、これ以上はかなり厳しいです。\n上限(¥10,000,000)を超えた場合、会社そのものが持ちません。' : '利息は週0.5%です。「年」ではなく「週」です。お忘れなく。'}\n\n経理 大西` });
     } else if (S.g.debt && S.g.money > 500000) {
       const pay = Math.min(S.g.debt, Math.floor((S.g.money - 500000) / 10000) * 10000);
       if (pay > 0) { S.g.debt -= pay; ledger('借入金 返済', 0, pay); }
